@@ -167,10 +167,10 @@
 
         <label style="left: 285px; top: 5px;">Horario Chequeo:</label>
         <select id="cb_horario" style="left: 285px; top: 28px; width: 110px;">
-            <option value="4:00 a. m.">4:00 a. m.</option>
-            <option value="10:00 a. m.">10:00 a. m.</option>
-            <option value="17:00 p. m.">17:00 p. m.</option>
-            <option value="22:00 p. m.">22:00 p. m.</option>
+            <option value="04:00 AM">04:00 AM</option>
+            <option value="10:00 AM">10:00 AM</option>
+            <option value="16:00 PM">16:00 PM</option>
+            <option value="22:00 PM">22:00 PM</option>
         </select>
 
         <label style="left: 410px; top: 5px; color: #ADFF2F;">Pasillo Frío Temp (°C):</label>
@@ -199,10 +199,10 @@
     <input type="text" id="modelo" class="form-input" style="left: 365px; top: 143px; width: 90px;">
 
     <label class="form-label" style="left: 470px; top: 120px;">RU#</label>
-    <input type="text" id="ru" class="form-input" style="left: 470px; top: 143px; width: 50px;">
+    <input type="text" id="serie" class="form-input" style="left: 470px; top: 143px; width: 50px;">
 
     <label class="form-label" style="left: 530px; top: 120px;">Serie</label>
-    <input type="text" id="serie" class="form-input" style="left: 530px; top: 143px; width: 115px;">
+    <input type="text" id="ru" class="form-input" style="left: 530px; top: 143px; width: 115px;">
 
     <label class="form-label" style="left: 655px; top: 120px;">Estatus</label>
     <select id="cb_estado" class="form-select" style="left: 655px; top: 143px; width: 90px;">
@@ -243,10 +243,10 @@
                     <th style="width: 130px;">Modelo</th>
                     <th style="width: 50px;">RU#</th>
                     <th style="width: 130px;">Serie</th>
-                    <th style="width: 95px;">4:00 a. m.</th>
-                    <th style="width: 95px;">10:00 a. m.</th>
-                    <th style="width: 95px;">17:00 p. m.</th>
-                    <th style="width: 95px;">22:00 p. m.</th>
+                    <th style="width: 85px;">04:00 AM</th>
+                    <th style="width: 85px;">10:00 AM</th>
+                    <th style="width: 85px;">16:00 PM</th>
+                    <th style="width: 85px;">22:00 PM</th>
                     <th style="width: 90px;">Estado</th>
                     <th style="width: 200px;">Observaciones</th>
                 </tr>
@@ -261,50 +261,31 @@
     let workbook_data = null;
     let fila_seleccionada_idx = null;
 
-    // Rangos originales de escaneo de filas de tus 3 bloques
     const rangos_paginas = [
         { inicio: 13, fin: 72 },
         { inicio: 84, fin: 174 },
         { inicio: 186, fin: 287 }
     ];
 
-    // MAPEO DE COLUMNAS ACTUALIZADO FIEL A TU CAPTURA REAL
-    const COL_GABINETE = 1;       // A (Gabinete #1)
-    const COL_NOMBRE = 2;         // B ("ODF", "Cisco Nexus...")
-    const COL_MARCA = 3;          // C
-    const COL_MODELO = 4;         // D
-    const COL_RU = 5;             // E
-    const COL_SERIE = 6;          // F
-    const COL_4AM = 7;            // G
-    const COL_10AM = 8;           // H
-    const COL_17PM = 9;           // I
-    const COL_22PM = 10;          // J
-    const COL_ESTADO = 11;         // K
-    const COL_OBSERVACIONES = 12;  // L
-
-    const mapa_columnas_horario = {
-        "4:00 a. m.": COL_4AM, 
-        "10:00 a. m.": COL_10AM, 
-        "17:00 p. m.": COL_17PM, 
-        "22:00 p. m.": COL_22PM
-    };
+    const mapa_columnas_horario = {"04:00 AM": 7, "10:00 AM": 8, "16:00 PM": 9, "22:00 PM": 10};
+    const col_observaciones = 12;
 
     window.onload = function() {
         const cb_gabinete = document.getElementById("cb_gabinete");
         for(let i=1; i<=16; i++) {
             let opt = document.createElement("option");
-            opt.value = `GABINETE #${i}`;
+            opt.value = `Gabinete #${i}`;
             opt.textContent = `Gabinete #${i}`;
             cb_gabinete.appendChild(opt);
         }
-        cb_gabinete.value = "GABINETE #1";
+        cb_gabinete.value = "Gabinete #1";
 
         const hoy = new Date();
         const dia = String(hoy.getDate()).padStart(2, '0');
         const mes = String(hoy.getMonth() + 1).padStart(2, '0');
         const anio = hoy.getFullYear();
         document.getElementById("txt_fecha").value = `${dia}/${mes}/${anio}`;
-        document.getElementById("cb_horario").value = "4:00 a. m.";
+        document.getElementById("cb_horario").value = "04:00 AM";
         document.getElementById("cb_estado").value = "Óptimo";
     };
 
@@ -330,6 +311,7 @@
             let ws = {};
             ws['!ref'] = "A1:L300";
             ws['C4'] = {t: 's', v: document.getElementById("txt_fecha").value};
+            ws['C6'] = {t: 's', v: ""};
             XLSX.utils.book_append_sheet(workbook_data, ws, "Hoja1");
             ruta_excel_name = "Formato_Monitoreo.xlsx";
             document.getElementById("er").textContent = `Excel activo: ${ruta_excel_name}`;
@@ -381,40 +363,41 @@
         if(c4_val) document.getElementById("txt_fecha").value = c4_val;
         if(c6_val) document.getElementById("operador").value = c6_val;
 
-        let total_cargados = 0;
-
         for(let rango of rangos_paginas) {
             for(let fila = rango.inicio; fila <= rango.fin; fila++) {
-                let nom = obtener_celda(hoja, fila, COL_NOMBRE); 
+                let nom = obtener_celda(hoja, fila, 2);
                 
                 if(nom && String(nom).trim() !== "" && !_fila_es_encabezado(nom)) {
-                    let gab_raw = obtener_celda(hoja, fila, COL_GABINETE) || "GABINETE #1";
-                    let mar = obtener_celda(hoja, fila, COL_MARCA);
-                    let mod = obtener_celda(hoja, fila, COL_MODELO);
-                    let ru_val = obtener_celda(hoja, fila, COL_RU);
-                    let ser = obtener_celda(hoja, fila, COL_SERIE);
-                    let h04 = obtener_celda(hoja, fila, COL_4AM);
-                    let h10 = obtener_celda(hoja, fila, COL_10AM);
-                    let h17 = obtener_celda(hoja, fila, COL_17PM);
-                    let h22 = obtener_celda(hoja, fila, COL_22PM);
-                    let est = obtener_celda(hoja, fila, COL_ESTADO) || "Óptimo";
-                    let obs = obtener_celda(hoja, fila, COL_OBSERVACIONES);
+                    let gab_raw = obtener_celda(hoja, fila, 1);
+                    let gabinete_nombre = gab_raw ? String(gab_raw).trim() : "";
+
+                    let mar = obtener_celda(hoja, fila, 3);
+                    let mod = obtener_celda(hoja, fila, 4);
+                    let ser = obtener_celda(hoja, fila, 5);
+                    let ru_val = obtener_celda(hoja, fila, 6);
+                    let h04 = obtener_celda(hoja, fila, 7);
+                    let h10 = obtener_celda(hoja, fila, 8);
+                    let h16 = obtener_celda(hoja, fila, 9);
+                    let h22 = obtener_celda(hoja, fila, 10);
+                    let est = obtener_celda(hoja, fila, 11) || "Óptimo";
+                    let obs = obtener_celda(hoja, fila, col_observaciones);
 
                     let tag = _tag_estado(est);
+
                     let tr = document.createElement("tr");
                     tr.className = tag;
                     tr.dataset.filaExcel = fila;
                     
                     tr.innerHTML = `
-                        <td style="text-align:center;">${gab_raw}</td>
-                        <td><b>${nom}</b></td>
+                        <td style="text-align:center;">${gabinete_nombre}</td>
+                        <td>${nom}</td>
                         <td style="text-align:center;">${mar}</td>
                         <td style="text-align:center;">${mod}</td>
+                        <td style="text-align:center;">${ser}</td>
                         <td style="text-align:center;">${ru_val}</td>
-                        <td>${ser}</td>
                         <td style="text-align:center;">${h04}</td>
                         <td style="text-align:center;">${h10}</td>
-                        <td style="text-align:center;">${h17}</td>
+                        <td style="text-align:center;">${h16}</td>
                         <td style="text-align:center;">${h22}</td>
                         <td style="text-align:center;">${est}</td>
                         <td>${obs}</td>
@@ -425,34 +408,29 @@
                         for(let r of rows) r.classList.remove("selected");
                         tr.classList.add("selected");
                         fila_seleccionada_idx = fila;
-                        cargar_seleccion(gab_raw, nom, mar, mod, ru_val, ser, h04, h10, h17, h22, est, obs);
+                        cargar_seleccion(gabinete_nombre, nom, mar, mod, ser, ru_val, h04, h10, h16, h22, est, obs);
                     };
 
                     tbody.appendChild(tr);
-                    total_cargados++;
                 }
             }
         }
-
-        if(total_cargados === 0) {
-            alert("Diagnóstico: El archivo se leyó bien, pero no se encontraron equipos en la columna B dentro de las filas asignadas (13-72, 84-174, 186-287). Comprueba tu plantilla.");
-        }
     }
 
-    function cargar_seleccion(gab, nom, mar, mod, ru_val, ser, h04, h10, h17, h22, est, obs) {
-        document.getElementById("cb_gabinete").value = gab.toUpperCase().includes("GABINETE") ? gab.toUpperCase() : "GABINETE #1";
+    function cargar_seleccion(gab, nom, mar, mod, ser, ru_val, h04, h10, h16, h22, est, obs) {
+        if(gab) document.getElementById("cb_gabinete").value = gab;
         document.getElementById("nombre").value = nom;
         document.getElementById("marca").value = mar;
         document.getElementById("modelo").value = mod;
-        document.getElementById("ru").value = ru_val; 
         document.getElementById("serie").value = ser; 
+        document.getElementById("ru").value = ru_val; 
 
         let turno = document.getElementById("cb_horario").value;
         let med = "";
-        if(turno === "4:00 a. m.") med = h04;
-        else if(turno === "10:00 a. m.") med = h10;
-        else if(turno === "17:00 p. m.") med = h17;
-        else if(turno === "22:00 p. m.") med = h22;
+        if(turno === "04:00 AM") med = h04;
+        else if(turno === "10:00 AM") med = h10;
+        else if(turno === "16:00 PM") med = h16;
+        else if(turno === "22:00 PM") med = h22;
 
         document.getElementById("medicion_individual").value = med;
         document.getElementById("cb_estado").value = est;
@@ -465,6 +443,7 @@
 
     function guardar() {
         if(!workbook_data) { alert("Primero debes Abrir o Crear un archivo."); return; }
+        let fecha = document.getElementById("txt_fecha").value.trim();
         let nom = document.getElementById("nombre").value.trim();
         if(!nom){ alert("El Nombre del equipo es obligatorio."); return; }
 
@@ -474,7 +453,7 @@
         let fila_libre = null;
         for(let rango of rangos_paginas) {
             for(let fila = rango.inicio; fila <= rango.fin; fila++) {
-                let val_b = obtener_celda(hoja, fila, COL_NOMBRE);
+                let val_b = obtener_celda(hoja, fila, 2);
                 if(!val_b || String(val_b).trim() === "") {
                     fila_libre = fila;
                     break;
@@ -483,22 +462,25 @@
             if(fila_libre !== null) break;
         }
 
-        if(fila_libre === null) { alert("No hay espacio libre en los rangos del formato."); return; }
+        if(fila_libre === null) {
+            alert("No hay espacio libre en los rangos del formato.");
+            return;
+        }
 
-        asignar_celda(hoja, 4, 3, document.getElementById("txt_fecha").value.trim());
+        asignar_celda(hoja, 4, 3, fecha);
         asignar_celda(hoja, 6, 3, document.getElementById("operador").value.trim());
 
-        asignar_celda(hoja, fila_libre, COL_GABINETE, document.getElementById("cb_gabinete").value);
-        asignar_celda(hoja, fila_libre, COL_NOMBRE, nom);
-        asignar_celda(hoja, fila_libre, COL_MARCA, document.getElementById("marca").value.trim());
-        asignar_celda(hoja, fila_libre, COL_MODELO, document.getElementById("modelo").value.trim());
-        asignar_celda(hoja, fila_libre, COL_RU, document.getElementById("ru").value.trim()); 
-        asignar_celda(hoja, fila_libre, COL_SERIE, document.getElementById("serie").value.trim());    
+        asignar_celda(hoja, fila_libre, 1, document.getElementById("cb_gabinete").value);
+        asignar_celda(hoja, fila_libre, 2, nom);
+        asignar_celda(hoja, fila_libre, 3, document.getElementById("marca").value.trim());
+        asignar_celda(hoja, fila_libre, 4, document.getElementById("modelo").value.trim());
+        asignar_celda(hoja, fila_libre, 5, document.getElementById("serie").value.trim()); 
+        asignar_celda(hoja, fila_libre, 6, document.getElementById("ru").value.trim());    
 
-        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || COL_4AM;
+        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
         asignar_celda(hoja, fila_libre, col_turno, document.getElementById("medicion_individual").value.trim());
-        asignar_celda(hoja, fila_libre, COL_ESTADO, document.getElementById("cb_estado").value);
-        asignar_celda(hoja, fila_libre, COL_OBSERVACIONES, document.getElementById("txt_observaciones").value.trim());
+        asignar_celda(hoja, fila_libre, 11, document.getElementById("cb_estado").value);
+        asignar_celda(hoja, fila_libre, col_observaciones, document.getElementById("txt_observaciones").value.trim());
 
         alert(`Equipo registrado con éxito en la fila ${fila_libre}. Se descargará tu copia.`);
         limpiar_campos();
@@ -513,17 +495,17 @@
         let sheetName = workbook_data.SheetNames[0];
         let hoja = workbook_data.Sheets[sheetName];
 
-        asignar_celda(hoja, fila_seleccionada_idx, COL_GABINETE, document.getElementById("cb_gabinete").value);
-        asignar_celda(hoja, fila_seleccionada_idx, COL_NOMBRE, document.getElementById("nombre").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, COL_MARCA, document.getElementById("marca").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, COL_MODELO, document.getElementById("modelo").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, COL_RU, document.getElementById("ru").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, COL_SERIE, document.getElementById("serie").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 1, document.getElementById("cb_gabinete").value);
+        asignar_celda(hoja, fila_seleccionada_idx, 2, document.getElementById("nombre").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 3, document.getElementById("marca").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 4, document.getElementById("modelo").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 5, document.getElementById("serie").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 6, document.getElementById("ru").value.trim());
 
-        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || COL_4AM;
+        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
         asignar_celda(hoja, fila_seleccionada_idx, col_turno, document.getElementById("medicion_individual").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, COL_ESTADO, document.getElementById("cb_estado").value);
-        asignar_celda(hoja, fila_seleccionada_idx, COL_OBSERVACIONES, document.getElementById("txt_observaciones").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 11, document.getElementById("cb_estado").value);
+        asignar_celda(hoja, fila_seleccionada_idx, col_observaciones, document.getElementById("txt_observaciones").value.trim());
 
         alert(`Fila ${fila_seleccionada_idx} modificada con éxito.`);
         limpiar_campos();
@@ -538,6 +520,7 @@
 
     function limpiar_registro() {
         if(!workbook_data || fila_seleccionada_idx === null) return;
+
         let menu = prompt("¿Qué desea limpiar?\nEscriba 'SI' para borrar solo la medición del turno.\nEscriba 'NO' para borrar TODO el equipo.");
         if(!menu) return;
 
@@ -545,14 +528,15 @@
         let hoja = workbook_data.Sheets[sheetName];
 
         if(menu.toUpperCase().trim() === "SI") {
-            let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || COL_4AM;
+            let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
             asignar_celda(hoja, fila_seleccionada_idx, col_turno, "");
         } else if(menu.toUpperCase().trim() === "NO") {
             if(!confirm("¿Borrar el equipo completo?")) return;
-            for(let col = 1; col <= COL_OBSERVACIONES; col++) {
+            for(let col = 1; col <= col_observaciones; col++) {
                 asignar_celda(hoja, fila_seleccionada_idx, col, "");
             }
         }
+
         limpiar_campos();
         mostrar();
         disparar_descarga();
@@ -565,12 +549,13 @@
 
         const tbody = document.getElementById("tree_body");
         tbody.innerHTML = "";
+
         let sheetName = workbook_data.SheetNames[0];
         let hoja = workbook_data.Sheets[sheetName];
 
         for(let rango of rangos_paginas) {
             for(let fila = rango.inicio; fila <= rango.fin; fila++) {
-                let nom = obtener_celda(hoja, fila, COL_NOMBRE);
+                let nom = obtener_celda(hoja, fila, 2);
                 if(!nom || _fila_es_encabezado(nom)) continue;
 
                 let contenido = "";
@@ -579,18 +564,18 @@
                 if(contenido.toLowerCase().includes(criterio)) {
                     let tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td>${obtener_celda(hoja, fila, COL_GABINETE)}</td>
-                        <td><b>${nom}</b></td>
-                        <td>${obtener_celda(hoja, fila, COL_MARCA)}</td>
-                        <td>${obtener_celda(hoja, fila, COL_MODELO)}</td>
-                        <td>${obtener_celda(hoja, fila, COL_RU)}</td>
-                        <td>${obtener_celda(hoja, fila, COL_SERIE)}</td>
-                        <td>${obtener_celda(hoja, fila, COL_4AM)}</td>
-                        <td>${obtener_celda(hoja, fila, COL_10AM)}</td>
-                        <td>${obtener_celda(hoja, fila, COL_17PM)}</td>
-                        <td>${obtener_celda(hoja, fila, COL_22PM)}</td>
-                        <td>${obtener_celda(hoja, fila, COL_ESTADO) || "Óptimo"}</td>
-                        <td>${obtener_celda(hoja, fila, COL_OBSERVACIONES)}</td>
+                        <td>${obtener_celda(hoja, fila, 1)}</td>
+                        <td>${nom}</td>
+                        <td>${obtener_celda(hoja, fila, 3)}</td>
+                        <td>${obtener_celda(hoja, fila, 4)}</td>
+                        <td>${obtener_celda(hoja, fila, 5)}</td>
+                        <td>${obtener_celda(hoja, fila, 6)}</td>
+                        <td>${obtener_celda(hoja, fila, 7)}</td>
+                        <td>${obtener_celda(hoja, fila, 8)}</td>
+                        <td>${obtener_celda(hoja, fila, 9)}</td>
+                        <td>${obtener_celda(hoja, fila, 10)}</td>
+                        <td>${obtener_celda(hoja, fila, 11) || "Óptimo"}</td>
+                        <td>${obtener_celda(hoja, fila, 12)}</td>
                     `;
                     tbody.appendChild(tr);
                 }
@@ -602,11 +587,11 @@
         document.getElementById("nombre").value = "";
         document.getElementById("marca").value = "";
         document.getElementById("modelo").value = "";
-        document.getElementById("ru").value = "";
         document.getElementById("serie").value = "";
+        document.getElementById("ru").value = "";
         document.getElementById("medicion_individual").value = "";
         document.getElementById("txt_observaciones").value = "";
-        document.getElementById("cb_gabinete").value = "GABINETE #1";
+        document.getElementById("cb_gabinete").value = "Gabinete #1";
         document.getElementById("cb_estado").value = "Óptimo";
     }
 </script>
