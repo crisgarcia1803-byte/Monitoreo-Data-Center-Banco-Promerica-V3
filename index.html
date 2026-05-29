@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoreo Data Center BP</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        /* Documentación interna
+           Autor: Cristopher Gerardo García Escoto (cris.garcia1803@gmail.com)
+           Lenguaje: HTML / JavaScript
+           Historia: 27/05/2026 - 28/05/2026 - 29/05/2026
+           Herramientas: Visual Studio Code, google, cluade code
+           Fin en mente: Optimizar el Monitoreo de servidores en el Data center
+           Procesos pendientes: Probar que funcione con el excel donde se llevan todos los registros */
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #098E09;
+            font-family: 'Avenir', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        #app-window {
+            width: 1280px;
+            height: 790px;
+            position: relative;
+            margin: 0 auto;
+            background-color: #098E09;
+        }
+
+        .title-label {
+            width: 100%;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            padding-top: 5px;
+            margin: 0;
+        }
+
+        /* --- CABECERA GENERAL --- */
+        .frame-cabecera {
+            position: absolute;
+            left: 10px;
+            top: 45px;
+            width: 1260px;
+            height: 65px;
+            background-color: #065F06;
+            border: 2px ridge #b0b0b0;
+            box-sizing: border-box;
+        }
+
+        .frame-cabecera label {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .frame-cabecera input, .frame-cabecera select {
+            position: absolute;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+
+        /* --- SECCIÓN DE DATOS DEL EQUIPO Y BÚSQUEDA --- */
+        .form-label {
+            position: absolute;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .form-input, .form-select {
+            position: absolute;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+
+        /* --- BOTONERA --- */
+        .btn {
+            position: absolute;
+            background-color: #ADFF2F;
+            color: black;
+            border: 1px solid #7a7a7a;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:active {
+            background-color: #96db29;
+        }
+        .btn-danger {
+            background-color: #FF6B6B;
+            color: white;
+        }
+        .btn-danger:active {
+            background-color: #e05353;
+        }
+
+        /* --- TREEVIEW ESTILO EXCEL --- */
+        .frame-tree {
+            position: absolute;
+            left: 10px;
+            top: 285px;
+            width: 1260px;
+            height: 480px;
+            background-color: white;
+            border: 1px solid #B0B0B0;
+            overflow: auto;
+        }
+
+        .excel-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 12px;
+            color: #1a1a1a;
+            table-layout: fixed;
+        }
+
+        .excel-table th {
+            background-color: #D9E1F2;
+            color: #1F2D3D;
+            font-weight: bold;
+            border: 1px solid #B0B0B0;
+            padding: 4px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .excel-table td {
+            border: 1px solid #B0B0B0;
+            padding: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Tags de color por estado */
+        .excel-table tr.optimo { background-color: #E2EFDA; color: #1a5c1a; }
+        .excel-table tr.alertado { background-color: #FFF2CC; color: #7d5c00; }
+        .excel-table tr.fallo { background-color: #FCE4D6; color: #8b0000; }
+        
+        .excel-table tr.selected {
+            background-color: #CCE5FF !important;
+            color: #000000 !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-window">
+    <p class="title-label">Monitoreo Data Center BP</p>
+
+    <div class="frame-cabecera">
+        <label style="left: 10px; top: 5px;">Fecha:</label>
+        <input type="text" id="txt_fecha" style="left: 10px; top: 28px; width: 90px;">
+
+        <label style="left: 115px; top: 5px;">Operador / Responsable:</label>
+        <input type="text" id="operador" style="left: 115px; top: 28px; width: 155px;">
+
+        <label style="left: 285px; top: 5px;">Horario Chequeo:</label>
+        <select id="cb_horario" style="left: 285px; top: 28px; width: 110px;">
+            <option value="04:00 AM">04:00 AM</option>
+            <option value="10:00 AM">10:00 AM</option>
+            <option value="16:00 PM">16:00 PM</option>
+            <option value="22:00 PM">22:00 PM</option>
+        </select>
+
+        <label style="left: 410px; top: 5px; color: #ADFF2F;">Pasillo Frío Temp (°C):</label>
+        <input type="text" id="p_frio_temp" style="left: 410px; top: 28px; width: 75px;">
+
+        <label style="left: 530px; top: 5px; color: #ADFF2F;">Pasillo Frío Hum (%):</label>
+        <input type="text" id="p_frio_hum" style="left: 530px; top: 28px; width: 75px;">
+
+        <label style="left: 645px; top: 5px; color: #ADFF2F;">Pasillo Cal. Temp (°C):</label>
+        <input type="text" id="p_cal_temp" style="left: 645px; top: 28px; width: 75px;">
+
+        <label style="left: 758px; top: 5px; color: #ADFF2F;">Pasillo Cal. Hum (%):</label>
+        <input type="text" id="p_cal_hum" style="left: 758px; top: 28px; width: 75px;">
+    </div>
+
+    <label class="form-label" style="left: 10px; top: 120px;">Gabinete</label>
+    <select id="cb_gabinete" class="form-select" style="left: 10px; top: 143px; width: 120px;"></select>
+
+    <label class="form-label" style="left: 145px; top: 120px;">Nombre Equipo</label>
+    <input type="text" id="nombre" class="form-input" style="left: 145px; top: 143px; width: 110px;">
+
+    <label class="form-label" style="left: 265px; top: 120px;">Marca</label>
+    <input type="text" id="marca" class="form-input" style="left: 265px; top: 143px; width: 85px;">
+
+    <label class="form-label" style="left: 365px; top: 120px;">Modelo</label>
+    <input type="text" id="modelo" class="form-input" style="left: 365px; top: 143px; width: 90px;">
+
+    <label class="form-label" style="left: 470px; top: 120px;">RU#</label>
+    <input type="text" id="serie" class="form-input" style="left: 470px; top: 143px; width: 50px;">
+
+    <label class="form-label" style="left: 530px; top: 120px;">Serie</label>
+    <input type="text" id="ru" class="form-input" style="left: 530px; top: 143px; width: 115px;">
+
+    <label class="form-label" style="left: 655px; top: 120px;">Estatus</label>
+    <select id="cb_estado" class="form-select" style="left: 655px; top: 143px; width: 90px;">
+        <option value="Óptimo">Óptimo</option>
+        <option value="Alertado">Alertado</option>
+        <option value="Fallo">Fallo</option>
+    </select>
+
+    <label class="form-label" style="left: 760px; top: 120px; color: #ADFF2F;">Medición Turno</label>
+    <input type="text" id="medicion_individual" class="form-input" style="left: 760px; top: 143px; width: 115px;">
+
+    <label class="form-label" style="left: 890px; top: 120px;">Observaciones</label>
+    <input type="text" id="txt_observaciones" class="form-input" style="left: 890px; top: 143px; width: 140px;">
+
+    <label class="form-label" style="left: 10px; top: 185px;">Buscar:</label>
+    <input type="text" id="txt_buscar" class="form-input" style="left: 75px; top: 185px; width: 195px;">
+    <button class="btn" style="left: 280px; top: 183px; width: 80px; height: 24px; font-size:12px;" onclick="ejecutar_busqueda()">Buscar</button>
+    <button class="btn" style="left: 368px; top: 183px; width: 120px; height: 24px; font-size:12px;" onclick="mostrar()">Limpiar Búsqueda</button>
+
+    <label id="er" style="position: absolute; left: 10px; top: 218px; font-size: 14px; font-style: italic; color: #ADFF2F;">Excel activo: Ninguno</label>
+
+    <input type="file" id="file_picker" accept=".xlsx" style="display:none" onchange="cargar_archivo(event)">
+
+    <button class="btn" style="left: 10px;  top: 248px; width: 140px; height: 26px;" onclick="crear()">Abrir / Crear</button>
+    <button class="btn" style="left: 158px; top: 248px; width: 130px; height: 26px;" onclick="guardar()">Guardar Registro</button>
+    <button class="btn" style="left: 296px; top: 248px; width: 110px; height: 26px;" onclick="mostrar()">Mostrar Todo</button>
+    <button class="btn" style="left: 414px; top: 248px; width: 120px; height: 26px;" onclick="modificar()">Modificar Celda</button>
+    <button class="btn" style="left: 542px; top: 248px; width: 130px; height: 26px;" onclick="confirmar_estatus()">Confirmar Turno</button>
+    <button class="btn btn-danger" style="left: 680px; top: 248px; width: 130px; height: 26px;" onclick="limpiar_registro()">Limpiar Registro</button>
+
+    <div class="frame-tree">
+        <table class="excel-table">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">Gabinete</th>
+                    <th style="width: 140px;">Nombre Equipo</th>
+                    <th style="width: 90px;">Marca</th>
+                    <th style="width: 130px;">Modelo</th>
+                    <th style="width: 50px;">RU#</th>
+                    <th style="width: 130px;">Serie</th>
+                    <th style="width: 85px;">04:00 AM</th>
+                    <th style="width: 85px;">10:00 AM</th>
+                    <th style="width: 85px;">17:00 PM</th>
+                    <th style="width: 85px;">22:00 PM</th>
+                    <th style="width: 90px;">Estado</th>
+                    <th style="width: 200px;">Observaciones</th>
+                </tr>
+            </thead>
+            <tbody id="tree_body"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Variables globales globales de la aplicación
+    let ruta_excel_name = null;
+    let workbook_data = null;
+    let fila_seleccionada_idx = null;
+
+    // Rangos de filas asignadas para equipos en las 3 páginas del formato
+    const rangos_paginas = [
+        { inicio: 13, fin: 72 },
+        { inicio: 84, fin: 174 },
+        { inicio: 186, fin: 287 }
+    ];
+
+    // Mapeo de horarios a columnas físicas del Excel (G=7, H=8, I=9, J=10)
+    const mapa_columnas_horario = {"04:00 AM": 7, "10:00 AM": 8, "16:00 PM": 9, "22:00 PM": 10};
+    const col_amb_inicio = 12; // columnas L, M, N, O
+    const col_observaciones = 16; // columna P para observaciones
+
+    // Inicialización al cargar la ventana
+    window.onload = function() {
+        // Inicializar combobox gabinetes
+        const cb_gabinete = document.getElementById("cb_gabinete");
+        for(let i=1; i<=16; i++) {
+            let opt = document.createElement("option");
+            opt.value = `Gabinete #${i}`;
+            opt.textContent = `Gabinete #${i}`;
+            cb_gabinete.appendChild(opt);
+        }
+        cb_gabinete.value = "Gabinete #1";
+
+        // Establecer fecha por defecto dd/mm/yyyy
+        const hoy = new Date();
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const anio = hoy.getFullYear();
+        document.getElementById("txt_fecha").value = `${dia}/${mes}/${anio}`;
+        document.getElementById("cb_horario").value = "04:00 AM";
+        document.getElementById("cb_estado").value = "Óptimo";
+    };
+
+    function es_fecha_valida(texto) {
+        const reg = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+        if(!reg.test(texto)) return false;
+        const parts = texto.split("/");
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        const date = new Date(y, m, d);
+        return date.getFullYear() === y && date.getMonth() === m && date.getDate() === d;
+    }
+
+    function* iterar_filas_validas() {
+        for(let rango of rangos_paginas) {
+            for(let fila = rango.inicio; fila <= rango.fin; fila++) {
+                yield fila;
+            }
+        }
+    }
+
+    function _fila_es_encabezado(valor) {
+        if (valor === undefined || valor === null || String(valor).trim() === "") return true;
+        let s = String(valor).toUpperCase();
+        return s.includes("NOMBRE") || s.includes("PÁGINA") || s.includes("EQUIPO");
+    }
+
+    function _tag_estado(estado) {
+        let e = String(estado).disabled ? "" : String(estado).toLowerCase().trim();
+        if(e.includes("fallo")) return "fallo";
+        if(e.includes("alert")) return "alertado";
+        return "optimo";
+    }
+
+    // disparador del evento "crear/abrir"
+    function crear() {
+        let n = confirm("¿Desea abrir un archivo ya creado?\n(Aceptar = Abrir archivo existente / Cancelar = Inicializar nuevo entorno virtual)");
+        if (n) {
+            document.getElementById("file_picker").click();
+        } else {
+            // Emula la creación de un libro vacío estructurado
+            workbook_data = XLSX.utils.book_new();
+            let ws = {};
+            ws['!ref'] = "A1:P300";
+            XLSX.utils.book_append_sheet(workbook_data, ws, "Hoja1");
+            ruta_excel_name = "nuevo_monitoreo.xlsx";
+            document.getElementById("er").textContent = `Excel activo: ${ruta_excel_name}`;
+            alert("Se creó un entorno de archivo Excel nuevo virtual.");
+            mostrar();
+        }
+    }
+
+    function cargar_archivo(e) {
+        let file = e.target.files[0];
+        if (!file) return;
+        ruta_excel_name = file.name;
+        let reader = new FileReader();
+        reader.onload = function(evt) {
+            let data = new Uint8Array(evt.target.result);
+            workbook_data = XLSX.read(data, {type: 'array', cellStyles: true});
+            document.getElementById("er").textContent = `Excel activo: ${ruta_excel_name}`;
+            mostrar();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function obtener_celda(ws, r, c) {
+        let cell_ref = XLSX.utils.encode_cell({r: r - 1, c: c - 1});
+        return ws[cell_ref] ? ws[cell_ref].v : "";
+    }
+
+    function asignar_celda(ws, r, c, val) {
+        let cell_ref = XLSX.utils.encode_cell({r: r - 1, c: c - 1});
+        ws[cell_ref] = { t: 's', v: String(val) };
+    }
+
+    function mostrar() {
+        if(!workbook_data) return;
+        const tbody = document.getElementById("tree_body");
+        tbody.innerHTML = "";
+        fila_seleccionada_idx = null;
+
+        let sheetName = workbook_data.SheetNames[0];
+        let hoja = workbook_data.Sheets[sheetName];
+
+        let c4_val = obtener_celda(hoja, 4, 3);
+        let c6_val = obtener_celda(hoja, 6, 3);
+
+        if(c4_val) document.getElementById("txt_fecha").value = c4_val;
+        if(c6_val) document.getElementById("operador").value = c6_val;
+
+        let iterador = iterar_filas_validas();
+        for(let fila of iterador) {
+            let nom = obtener_celda(hoja, fila, 2);
+            if(_fila_es_encabezado(nom)) continue;
+
+            let gab_raw = obtener_celda(hoja, fila, 1);
+            let gabinete_nombre = gab_raw ? String(gab_raw).trim() : "";
+
+            let mar = obtener_celda(hoja, fila, 3);
+            let mod = obtener_celda(hoja, fila, 4);
+            let ser = obtener_celda(hoja, fila, 5); // col 5 = Serie
+            let ru_val = obtener_celda(hoja, fila, 6); // col 6 = RU#
+            let h04 = obtener_celda(hoja, fila, 7);
+            let h10 = obtener_celda(hoja, fila, 8);
+            let h16 = obtener_celda(hoja, fila, 9);
+            let h22 = obtener_celda(hoja, fila, 10);
+            let est = obtener_celda(hoja, fila, 11) || "Óptimo";
+            let obs = obtener_celda(hoja, fila, col_observaciones);
+
+            let tag = _tag_estado(est);
+
+            let tr = document.createElement("tr");
+            tr.className = tag;
+            tr.dataset.filaExcel = fila;
+            
+            // Atributos internos mapeados exactamente al orden visual del Treeview original
+            tr.innerHTML = `
+                <td style="text-align:center;">${gabinete_nombre}</td>
+                <td>${nom}</td>
+                <td style="text-align:center;">${mar}</td>
+                <td style="text-align:center;">${mod}</td>
+                <td>${ser}</td>
+                <td style="text-align:center;">${ru_val}</td>
+                <td style="text-align:center;">${h04}</td>
+                <td style="text-align:center;">${h10}</td>
+                <td style="text-align:center;">${h16}</td>
+                <td style="text-align:center;">${h22}</td>
+                <td style="text-align:center;">${est}</td>
+                <td>${obs}</td>
+            `;
+            
+            tr.onclick = function() {
+                let rows = tbody.getElementsByTagName("tr");
+                for(let r of rows) r.classList.remove("selected");
+                tr.classList.add("selected");
+                fila_seleccionada_idx = fila;
+                cargar_seleccion(gabinete_nombre, nom, mar, mod, ser, ru_val, h04, h10, h16, h22, est, obs);
+            };
+
+            tbody.appendChild(tr);
+        }
+    }
+
+    function cargar_seleccion(gab, nom, mar, mod, ser, ru_val, h04, h10, h16, h22, est, obs) {
+        if(gab) document.getElementById("cb_gabinete").value = gab;
+        document.getElementById("nombre").value = nom;
+        document.getElementById("marca").value = mar;
+        document.getElementById("modelo").value = mod;
+        document.getElementById("serie").value = ser; // valores[4] Serie
+        document.getElementById("ru").value = ru_val; // valores[5] RU#
+
+        let turno = document.getElementById("cb_horario").value;
+        let med = "";
+        if(turno === "04:00 AM") med = h04;
+        else if(turno === "10:00 AM") med = h10;
+        else if(turno === "16:00 PM") med = h16;
+        else if(turno === "22:00 PM") med = h22;
+
+        document.getElementById("medicion_individual").value = med;
+        document.getElementById("cb_estado").value = est;
+        document.getElementById("txt_observaciones").value = obs;
+    }
+
+    function disparar_descarga() {
+        // Guarda internamente la lógica y descarga el archivo simulando el wb.save() local
+        XLSX.writeFile(workbook_data, ruta_excel_name);
+    }
+
+    function guardar() {
+        if(!workbook_data) return;
+        let fecha = document.getElementById("txt_fecha").value.trim();
+        if(!es_fecha_valida(fecha)){
+            alert("La fecha debe tener formato dd/mm/yyyy.");
+            return;
+        }
+        let nom = document.getElementById("nombre").value.trim();
+        if(!nom){
+            alert("El Nombre del equipo es obligatorio.");
+            return;
+        }
+
+        let sheetName = workbook_data.SheetNames[0];
+        let hoja = workbook_data.Sheets[sheetName];
+
+        let fila_libre = null;
+        let iterador = iterar_filas_validas();
+        for(let fila of iterador) {
+            let val_b = obtener_celda(hoja, fila, 2);
+            if(!val_b || String(val_b).trim() === "") {
+                fila_libre = fila;
+                break;
+            }
+        }
+
+        if(fila_libre === null) {
+            alert("No hay espacio libre en las filas asignadas.");
+            return;
+        }
+
+        asignar_celda(hoja, 4, 3, fecha);
+        asignar_celda(hoja, 6, 3, document.getElementById("operador").value.trim());
+
+        asignar_celda(hoja, fila_libre, 1, document.getElementById("cb_gabinete").value);
+        asignar_celda(hoja, fila_libre, 2, nom);
+        asignar_celda(hoja, fila_libre, 3, document.getElementById("marca").value.trim());
+        asignar_celda(hoja, fila_libre, 4, document.getElementById("modelo").value.trim());
+        asignar_celda(hoja, fila_libre, 5, document.getElementById("serie").value.trim()); // Serie col 5
+        asignar_celda(hoja, fila_libre, 6, document.getElementById("ru").value.trim());    // RU# col 6
+
+        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
+        asignar_celda(hoja, fila_libre, col_turno, document.getElementById("medicion_individual").value.trim());
+        asignar_celda(hoja, fila_libre, 11, document.getElementById("cb_estado").value);
+
+        // Datos ambientales
+        asignar_celda(hoja, fila_libre, 12, document.getElementById("p_frio_temp").value.trim());
+        asignar_celda(hoja, fila_libre, 13, document.getElementById("p_frio_hum").value.trim());
+        asignar_celda(hoja, fila_libre, 14, document.getElementById("p_cal_temp").value.trim());
+        asignar_celda(hoja, fila_libre, 15, document.getElementById("p_cal_hum").value.trim());
+        
+        // Observaciones
+        asignar_celda(hoja, fila_libre, col_observaciones, document.getElementById("txt_observaciones").value.trim());
+
+        alert(`Equipo registrado en la fila ${fila_libre}.`);
+        limpiar_campos();
+        mostrar();
+        disparar_descarga();
+    }
+
+    function modificar() {
+        if(!workbook_data || fila_seleccionada_idx === null) return;
+
+        let sheetName = workbook_data.SheetNames[0];
+        let hoja = workbook_data.Sheets[sheetName];
+
+        asignar_celda(hoja, fila_seleccionada_idx, 1, document.getElementById("cb_gabinete").value);
+        asignar_celda(hoja, fila_seleccionada_idx, 2, document.getElementById("nombre").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 3, document.getElementById("marca").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 4, document.getElementById("modelo").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 5, document.getElementById("serie").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 6, document.getElementById("ru").value.trim());
+
+        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
+        asignar_celda(hoja, fila_seleccionada_idx, col_turno, document.getElementById("medicion_individual").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 11, document.getElementById("cb_estado").value);
+
+        asignar_celda(hoja, fila_seleccionada_idx, 12, document.getElementById("p_frio_temp").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 13, document.getElementById("p_frio_hum").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 14, document.getElementById("p_cal_temp").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 15, document.getElementById("p_cal_hum").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, col_observaciones, document.getElementById("txt_observaciones").value.trim());
+
+        alert(`Fila ${fila_seleccionada_idx} modificada con éxito.`);
+        limpiar_campos();
+        mostrar();
+        disparar_descarga();
+    }
+
+    function confirmar_estatus() {
+        if(!workbook_data || fila_seleccionada_idx === null) return;
+
+        let sheetName = workbook_data.SheetNames[0];
+        let hoja = workbook_data.Sheets[sheetName];
+
+        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
+        asignar_celda(hoja, fila_seleccionada_idx, col_turno, document.getElementById("medicion_individual").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 11, document.getElementById("cb_estado").value);
+
+        asignar_celda(hoja, fila_seleccionada_idx, 12, document.getElementById("p_frio_temp").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 13, document.getElementById("p_frio_hum").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 14, document.getElementById("p_cal_temp").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, 15, document.getElementById("p_cal_hum").value.trim());
+        asignar_celda(hoja, fila_seleccionada_idx, col_observaciones, document.getElementById("txt_observaciones").value.trim());
+
+        alert(`Datos del turno guardados en fila ${fila_seleccionada_idx}.`);
+        limpiar_campos();
+        mostrar();
+        disparar_descarga();
+    }
+
+    function limpiar_registro() {
+        if(!workbook_data || fila_seleccionada_idx === null) return;
+
+        // Cuadro de confirmación triple simulado usando prompt nativo estructurado
+        let menu = prompt(
+            "¿Qué desea limpiar?\n\n" +
+            "Escriba 'SI' -> Borrar solo la medición del turno activo\n" +
+            "Escriba 'NO' -> Borrar el registro COMPLETO del equipo\n" +
+            "Deje vacío o cancele -> No hacer nada"
+        );
+
+        if(menu === null) return;
+        let resp = null;
+        if(menu.toUpperCase().trim() === "SI") resp = true;
+        else if(menu.toUpperCase().trim() === "NO") resp = false;
+        else return;
+
+        let sheetName = workbook_data.SheetNames[0];
+        let hoja = workbook_data.Sheets[sheetName];
+
+        if(resp === true) {
+            let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
+            asignar_celda(hoja, fila_seleccionada_idx, col_turno, "");
+        } else if(resp === false) {
+            let conf = confirm("¿Seguro que deseas borrar todos los datos?");
+            if(!conf) return;
+            for(let col = 2; col <= col_observaciones; col++) {
+                asignar_celda(hoja, fila_seleccionada_idx, col, "");
+            }
+        }
+
+        limpiar_campos();
+        mostrar();
+        disparar_descarga();
+    }
+
+    function ejecutar_busqueda() {
+        let criterio = document.getElementById("txt_buscar").value.toLowerCase().strip ? document.getElementById("txt_buscar").value.toLowerCase().strip() : document.getElementById("txt_buscar").value.toLowerCase().trim();
+        if(!criterio) { mostrar(); return; }
+        if(!workbook_data) return;
+
+        const tbody = document.getElementById("tree_body");
+        tbody.innerHTML = "";
+        let contador_fila = 0;
+
+        let sheetName = workbook_data.SheetNames[0];
+        let hoja = workbook_data.Sheets[sheetName];
+
+        let iterador = iterar_filas_validas();
+        for(let fila of iterador) {
+            let nom = obtener_celda(hoja, fila, 2);
+            if(_fila_es_encabezado(nom)) continue;
+
+            let datos_fila = [];
+            for(let col = 1; col <= col_observaciones; col++) {
+                datos_fila.push(String(obtener_celda(hoja, fila, col) || ""));
+            }
+
+            if(!datos_fila.join(" ").toLowerCase().includes(criterio)) continue;
+
+            let gab_raw = datos_fila[0];
+            let gabinete_nombre = gab_raw ? String(gab_raw).trim() : "";
+
+            let mar = datos_fila[2];
+            let mod = datos_fila[3];
+            let ser = datos_fila[4];
+            let ru_val = datos_fila[5];
+            let h04 = datos_fila[6];
+            let h10 = datos_fila[7];
+            let h16 = datos_fila[8];
+            let h22 = datos_fila[9];
+            let est = datos_fila[10] || "Óptimo";
+            let obs = obtener_celda(hoja, fila, col_observaciones);
+
+            let tag = _tag_estado(est);
+
+            let tr = document.createElement("tr");
+            tr.className = tag;
+            tr.dataset.filaExcel = fila;
+            tr.innerHTML = `
+                <td style="text-align:center;">${gabinete_nombre}</td>
+                <td>${nom}</td>
+                <td style="text-align:center;">${mar}</td>
+                <td style="text-align:center;">${mod}</td>
+                <td>${ser}</td>
+                <td style="text-align:center;">${ru_val}</td>
+                <td style="text-align:center;">${h04}</td>
+                <td style="text-align:center;">${h10}</td>
+                <td style="text-align:center;">${h16}</td>
+                <td style="text-align:center;">${h22}</td>
+                <td style="text-align:center;">${est}</td>
+                <td>${obs}</td>
+            `;
+
+            tr.onclick = function() {
+                let rows = tbody.getElementsByTagName("tr");
+                for(let r of rows) r.classList.remove("selected");
+                tr.classList.add("selected");
+                fila_seleccionada_idx = fila;
+                cargar_seleccion(gabinete_nombre, nom, mar, mod, ser, ru_val, h04, h10, h16, h22, est, obs);
+            };
+
+            tbody.appendChild(tr);
+            contador_fila++;
+        }
+
+        if(contador_fila === 0) {
+            alert(`No se encontraron equipos con: '${document.getElementById("txt_buscar").value}'`);
+        }
+    }
+
+    function limpiar_campos() {
+        document.getElementById("nombre").value = "";
+        document.getElementById("marca").value = "";
+        document.getElementById("modelo").value = "";
+        document.getElementById("serie").value = "";
+        document.getElementById("ru").value = "";
+        document.getElementById("medicion_individual").value = "";
+        document.getElementById("txt_observaciones").value = "";
+        document.getElementById("cb_gabinete").value = "Gabinete #1";
+        document.getElementById("cb_estado").value = "Óptimo";
+    }
+</script>
+</body>
+</html>
