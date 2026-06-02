@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Monitoreo Data Center BP</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <style>
         /* Documentación interna
            Autor: Cristopher Gerardo García Escoto (cris.garcia1803@gmail.com)
-           Proyecto: Practicante - Banco Promerica
-           Colegio: Colegio Suizo Americano
-           Fin en mente: Optimizar el Monitoreo de servidores en el Data center 
-           Historia: 27/05/2026 - 28/05/2026 - 29/05/2026 - 01/06/2026
-        */
+           Proyecto: Practicante - Banco Promerica 
+           Fin en mente: Optimizar y automatizar el monitoreo de Data Center
+           Historia: 27/05/2026 - 28/05/2026 - 29/05/2026 - 01/05/2026 - 02/05/2026
            
+           
+           */
 
         body {
             margin: 0;
@@ -20,9 +20,9 @@
             background-color: #098E09;
             font-family: Arial, sans-serif;
             color: white;
+            overflow-x: hidden; /* Evita scroll horizontal en toda la página */
         }
 
-        /* --- DISEÑO VISUAL ORIGINAL RESTAURADO (LÍNEAS DE CONTENEDORES CORRIDAS) --- */
         .fila-inputs {
             display: flex;
             flex-wrap: wrap;
@@ -57,7 +57,6 @@
             height: 28px;
         }
 
-        /* --- BOTONERA VERDE ORIGINAL --- */
         .acciones-container {
             display: flex;
             flex-wrap: wrap;
@@ -88,7 +87,6 @@
             background-color: #e05353;
         }
 
-        /* --- FILTRO POR GABINETE ORIGINAL --- */
         .barra-filtrado {
             background-color: #055405;
             padding: 8px;
@@ -113,20 +111,24 @@
             display: block;
         }
 
-        /* --- TREEVIEW / TABLA ORIGINAL ESTILO EXCEL --- */
+        /* --- OPTIMIZACIÓN DE ESPACIO DE LA TABLA --- */
         .frame-tree {
             background-color: white;
             border: 1px solid #ccc;
             border-radius: 4px;
             max-height: 450px;
-            overflow: auto;
+            overflow-y: auto;  
+            overflow-x: hidden; 
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .excel-table {
             border-collapse: collapse;
             width: 100%;
-            font-size: 12px;
+            font-size: 11px; 
             color: black;
+            table-layout: fixed; 
         }
 
         .excel-table th {
@@ -134,7 +136,7 @@
             color: black;
             font-weight: bold;
             border: 1px solid #7a7a7a;
-            padding: 6px;
+            padding: 5px 2px;
             text-align: center;
             position: sticky;
             top: 0;
@@ -143,9 +145,25 @@
 
         .excel-table td {
             border: 1px solid #7a7a7a;
-            padding: 5px;
+            padding: 4px 3px;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; 
         }
+
+        /* Asignación de anchos proporcionales optimizados para pantallas estándar */
+        .col-gab    { width: 9%; }
+        .col-nom    { width: 15%; }
+        .col-mar    { width: 7%; }
+        .col-mod    { width: 9%; }
+        .col-ru     { width: 4%; }
+        .col-ser    { width: 11%; }
+        .col-h04    { width: 7%; }
+        .col-h10    { width: 7%; }
+        .col-h16    { width: 7%; }
+        .col-h22    { width: 7%; }
+        .col-est    { width: 7%; }
+        .col-obs    { width: 11%; }
 
         .excel-table tr.optimo { background-color: #e2efda; }
         .excel-table tr.alertado { background-color: #fff2cc; }
@@ -166,12 +184,9 @@
             <input type="text" id="txt_fecha" style="width: 100px;">
         </div>
         <div class="flex-group">
-            <label>Operador / Responsable:</label>
-            <input type="text" id="operador" style="width: 180px;">
-        </div>
-        <div class="flex-group">
             <label>Horario Chequeo:</label>
-            <select id="cb_horario" style="width: 110px;">
+            <select id="cb_horario" onchange="cargar_datos_cabecera_turno()" style="width: 110px;">
+                <option value=""></option> 
                 <option value="04:00 AM">04:00 AM</option>
                 <option value="10:00 AM">10:00 AM</option>
                 <option value="16:00 PM">16:00 PM</option>
@@ -179,20 +194,32 @@
             </select>
         </div>
         <div class="flex-group">
-            <label class="highlight">Pasillo Frío Temp (°C):</label>
-            <input type="text" id="p_frio_temp" style="width: 80px;">
+            <label>Operador / Responsable:</label>
+            <input type="text" id="operador" style="width: 160px;">
         </div>
         <div class="flex-group">
-            <label class="highlight">Pasillo Frío Hum (%):</label>
-            <input type="text" id="p_frio_hum" style="width: 80px;">
+            <label class="highlight">ISP:</label>
+            <input type="text" id="input_isp" style="width: 80px;">
         </div>
         <div class="flex-group">
-            <label class="highlight">Pasillo Cal. Temp (°C):</label>
-            <input type="text" id="p_cal_temp" style="width: 80px;">
+            <label class="highlight">UPS (°C):</label>
+            <input type="text" id="input_ups" style="width: 80px;">
         </div>
         <div class="flex-group">
-            <label class="highlight">Pasillo Cal. Hum (%):</label>
-            <input type="text" id="p_cal_hum" style="width: 80px;">
+            <label class="highlight">Servidores (°F):</label>
+            <input type="text" id="input_servidores" style="width: 90px;">
+        </div>
+        <div class="flex-group">
+            <label class="highlight">AC (%RH):</label>
+            <input type="text" id="input_ac" style="width: 80px;">
+        </div>
+        <div class="flex-group">
+            <label class="highlight">PEX A:</label>
+            <input type="text" id="input_pexa" style="width: 80px;">
+        </div>
+        <div class="flex-group">
+            <label class="highlight">PEX B:</label>
+            <input type="text" id="input_pexb" style="width: 80px;">
         </div>
     </div>
 
@@ -201,7 +228,9 @@
     <div class="fila-inputs">
         <div class="flex-group">
             <label>Gabinete</label>
-            <select id="cb_gabinete" style="width: 130px;"></select>
+            <select id="cb_gabinete" style="width: 130px;">
+                <option value=""></option> 
+            </select>
         </div>
         <div class="flex-group">
             <label>Nombre Equipo</label>
@@ -226,6 +255,7 @@
         <div class="flex-group">
             <label>Estatus</label>
             <select id="cb_estado" style="width: 100px;">
+                <option value=""></option> 
                 <option value="Óptimo">Óptimo</option>
                 <option value="Alertado">Alertado</option>
                 <option value="Fallo">Fallo</option>
@@ -243,19 +273,15 @@
 
     <span id="er" class="status-label">Excel activo: Ninguno</span>
 
-    <input type="file" id="file_picker" accept=".xlsx" style="display:none" onchange="cargar_archivo(event)">
-
     <div class="acciones-container">
-        <button class="btn" onclick="crear()">Abrir / Crear</button>
+        <button class="btn" onclick="abrir_excel_nativo()">Abrir / Crear</button>
         <button class="btn" onclick="guardar()">Guardar Registro</button>
-        <button class="btn" onclick="mostrar_por_gabinete()">Mostrar Todo</button>
         <button class="btn" onclick="modificar()">Modificar Celda</button>
-        <button class="btn" onclick="confirmar_estatus()">Confirmar Turno</button>
         <button class="btn btn-danger" onclick="limpiar_registro()">Limpiar Registro</button>
     </div>
 
     <div class="barra-filtrado">
-        <label>FILTRAR VISTA POR GABINETE (PÁGINAS):</label>
+        <label>FILTRAR VISTA POR GABINETE:</label>
         <select id="cb_filtro_gabinete" onchange="mostrar_por_gabinete()" style="width: 180px;">
             <option value="TODOS">-- Ver Todo el Excel --</option>
         </select>
@@ -265,18 +291,18 @@
         <table class="excel-table">
             <thead>
                 <tr>
-                    <th style="width: 110px;">Gabinete</th>
-                    <th style="width: 160px;">Nombre Equipo</th>
-                    <th style="width: 90px;">Marca</th>
-                    <th style="width: 130px;">Modelo</th>
-                    <th style="width: 60px;">RU#</th>
-                    <th style="width: 130px;">Serie</th>
-                    <th style="width: 85px;">04:00 am</th>
-                    <th style="width: 85px;">10:00 am</th>
-                    <th style="width: 85px;">16:00 pm</th>
-                    <th style="width: 85px;">22:00 pm</th>
-                    <th style="width: 90px;">Estado</th>
-                    <th style="width: 220px;">Observaciones</th>
+                    <th class="col-gab">Gabinete</th>
+                    <th class="col-nom">Nombre Equipo</th>
+                    <th class="col-mar">Marca</th>
+                    <th class="col-mod">Modelo</th>
+                    <th class="col-ru">RU#</th>
+                    <th class="col-ser">Serie</th>
+                    <th class="col-h04">04:00 am</th>
+                    <th class="col-h10">10:00 am</th>
+                    <th class="col-h16">16:00 pm</th>
+                    <th class="col-h22">22:00 pm</th>
+                    <th class="col-est">Estado</th>
+                    <th class="col-obs">Observaciones</th>
                 </tr>
             </thead>
             <tbody id="tree_body"></tbody>
@@ -284,11 +310,13 @@
     </div>
 
 <script>
-    let ruta_excel_name = null;
-    let workbook_data = null;
+    let fileHandle = null;
+    let currentWorkbook = null; 
     let fila_seleccionada_idx = null;
 
+    // Mapeo exacto de columnas según el layout real de Banco Promerica
     const mapa_columnas_horario = {"04:00 AM": 7, "10:00 AM": 8, "16:00 PM": 9, "22:00 PM": 10};
+    const mapa_filas_cabecera_turno = {"04:00 AM": 6, "10:00 AM": 7, "16:00 PM": 8, "22:00 PM": 9};
     const col_observaciones = 12;
 
     window.onload = function() {
@@ -304,17 +332,60 @@
             cb_filtro.appendChild(opt2);
         }
         
-        cb_gabinete.value = "GABINETE #1";
+        cb_gabinete.value = "";
         cb_filtro.value = "TODOS";
-
-        const hoy = new Date();
-        document.getElementById("txt_fecha").value = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
-        document.getElementById("cb_horario").value = "04:00 AM";
-        document.getElementById("cb_estado").value = "Óptimo";
+        document.getElementById("cb_horario").value = "";
+        document.getElementById("cb_estado").value = "";
+        document.getElementById("txt_fecha").value = "";
     };
 
+    async function abrir_excel_nativo() {
+        try {
+            const [handle] = await window.showOpenFilePicker({
+                types: [{
+                    description: 'Archivos de Excel',
+                    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
+                }],
+                multiple: false
+            });
+            
+            fileHandle = handle;
+            const file = await fileHandle.getFile();
+            
+            let reader = new FileReader();
+            reader.onload = async function(evt) {
+                try {
+                    const workbook = new ExcelJS.Workbook();
+                    const buffer = evt.target.result;
+                    currentWorkbook = await workbook.xlsx.load(buffer);
+                    
+                    document.getElementById("er").textContent = `Excel activo (Con Formato): ${file.name}`;
+                    mostrar_por_gabinete();
+                    cargar_datos_cabecera_turno();
+                } catch(err) {
+                    alert("Error analizando los estilos del Excel corporativo.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } catch (err) {
+            console.log("Selección cancelada.", err);
+        }
+    }
+
+    async function actualizar_archivo_excel_fisico() {
+        if (!currentWorkbook || !fileHandle) return;
+        try {
+            const buffer = await currentWorkbook.xlsx.writeBuffer();
+            const writable = await fileHandle.createWritable();
+            await writable.write(buffer);
+            await writable.close();
+        } catch (err) {
+            alert("Error al guardar: Asegúrate de cerrar el archivo en Microsoft Excel antes de guardar.");
+        }
+    }
+
     function _fila_es_encabezado(valor) {
-        if (!valor) return false; // Modificado: Un valor vacío no se considera encabezado por defecto, permitiendo ver filas limpias
+        if (!valor) return false; 
         let s = String(valor).toUpperCase().trim();
         return s === "NOMBRE" || s === "MARCA" || s === "MODELO" || s.includes("HORA VERIFICACION") || s.includes("DATA CENTER") || s.includes("FECHA:");
     }
@@ -326,66 +397,64 @@
         return "optimo";
     }
 
-    function crear() {
-        let respuesta = confirm("¿Desea abrir un archivo Excel ya existente?\n\n[Aceptar] = Buscar archivo en el equipo.\n[Cancelar] = Crear un nuevo documento limpio.");
-        if (respuesta) {
-            document.getElementById("file_picker").value = ""; 
-            document.getElementById("file_picker").click();
-        } else {
-            workbook_data = XLSX.utils.book_new();
-            let ws = {};
-            ws['!ref'] = "A1:L300";
-            ws['B13'] = {t: 's', v: "GABINETE #1"};
-            
-            XLSX.utils.book_append_sheet(workbook_data, {}, "Portada");
-            XLSX.utils.book_append_sheet(workbook_data, ws, "Hoja2");
-            
-            ruta_excel_name = "Monitoreo_Data_Center.xlsx";
-            document.getElementById("er").textContent = `Excel activo: ${ruta_excel_name} (Nuevo Libro)`;
-            alert("Se ha inicializado un libro con la estructura adecuada.");
-            mostrar_por_gabinete();
-        }
+    function obtener_celda(hoja, r, c) {
+        const cell = hoja.getCell(r, c);
+        return cell.value !== null && cell.value !== undefined ? cell.value.toString() : "";
     }
 
-    function cargar_archivo(e) {
-        let file = e.target.files[0];
-        if (!file) return;
-        ruta_excel_name = file.name;
+    function asignar_celda(hoja, r, c, val) {
+        hoja.getCell(r, c).value = val;
+    }
+
+    // CORRECCIÓN DE COLUMNAS DE LECTURA (Celdas reales de la plantilla corporativa)
+    function cargar_datos_cabecera_turno() {
+        if(!currentWorkbook) return;
+        let turnoActivo = document.getElementById("cb_horario").value;
+        if(!turnoActivo) return; 
         
-        let reader = new FileReader();
-        reader.onload = function(evt) {
-            try {
-                let data = new Uint8Array(evt.target.result);
-                workbook_data = XLSX.read(data, { type: 'array' });
-                document.getElementById("er").textContent = `Excel activo: ${ruta_excel_name}`;
-                document.getElementById("cb_filtro_gabinete").value = "TODOS";
-                mostrar_por_gabinete();
-            } catch(err) {
-                alert("Error al mapear las celdas del documento.");
-            }
-        };
-        reader.readAsArrayBuffer(file);
+        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
+        let filaCabecera = mapa_filas_cabecera_turno[turnoActivo];
+
+        document.getElementById("operador").value = obtener_celda(hoja, filaCabecera, 3);   // Columna C (Nombre/Responsable)
+        document.getElementById("input_isp").value = obtener_celda(hoja, filaCabecera, 6);   // Columna F (ISP)
+        document.getElementById("input_ups").value = obtener_celda(hoja, filaCabecera, 8);   // Columna H (UPS)
+        document.getElementById("input_servidores").value = obtener_celda(hoja, filaCabecera, 10); // Columna J (Servidores)
+        document.getElementById("input_ac").value = obtener_celda(hoja, filaCabecera, 12);   // Columna L (AC)
+        
+        // El PEX lee de la celda de la columna M de forma limpia
+        document.getElementById("input_pexa").value = obtener_celda(hoja, filaCabecera, 13); // Columna M
+        document.getElementById("input_pexb").value = obtener_celda(hoja, filaCabecera + 1, 13); // Fila inferior si aplica, o se mantiene en M
+        
+        // Fecha va exactamente en la celda combinada C4
+        let fechaExcel = obtener_celda(hoja, 4, 3);
+        if(fechaExcel) document.getElementById("txt_fecha").value = fechaExcel;
     }
 
-    function obtener_celda(ws, r, c) {
-        let cell_ref = XLSX.utils.encode_cell({r: r - 1, c: c - 1});
-        return ws[cell_ref] ? ws[cell_ref].v : "";
+    // CORRECCIÓN DE ESCRITURA EN CELDAS EXACTAS
+    function interstate_guardar_cabecera(hoja) {
+        let turnoActivo = document.getElementById("cb_horario").value;
+        if(!turnoActivo) return;
+
+        let filaCabecera = mapa_filas_cabecera_turno[turnoActivo];
+
+        asignar_celda(hoja, filaCabecera, 3, document.getElementById("operador").value.trim());       // Columna C
+        asignar_celda(hoja, filaCabecera, 6, document.getElementById("input_isp").value.trim());       // Columna F
+        asignar_celda(hoja, filaCabecera, 8, document.getElementById("input_ups").value.trim());       // Columna H
+        asignar_celda(hoja, filaCabecera, 10, document.getElementById("input_servidores").value.trim()); // Columna J
+        asignar_celda(hoja, filaCabecera, 12, document.getElementById("input_ac").value.trim());       // Columna L
+        asignar_celda(hoja, filaCabecera, 13, document.getElementById("input_pexa").value.trim());     // Columna M (PEX A)
+        
+        // Corrección de la Fecha en la celda C4
+        asignar_celda(hoja, 4, 3, document.getElementById("txt_fecha").value.trim());
     }
 
-    function asignar_celda(ws, r, c, val) {
-        let cell_ref = XLSX.utils.encode_cell({r: r - 1, c: c - 1});
-        ws[cell_ref] = { t: 's', v: String(val) };
-    }
-
-    // --- PROCESADOR ADAPTADO PARA MOSTRAR FILAS CON CAMPOS VACÍOS ---
     function mostrar_por_gabinete() {
-        if(!workbook_data) return;
+        if(!currentWorkbook) return;
         const tbody = document.getElementById("tree_body");
         tbody.innerHTML = "";
         fila_seleccionada_idx = null;
 
-        let sheetName = workbook_data.SheetNames[1] ? workbook_data.SheetNames[1] : workbook_data.SheetNames[0];
-        let hoja = workbook_data.Sheets[sheetName];
+        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
         let filtro = document.getElementById("cb_filtro_gabinete").value;
 
         let gabinete_actual_contexto = "GABINETE #1"; 
@@ -394,17 +463,13 @@
             let celda_b = obtener_celda(hoja, fila, 2);
             let celda_b_str = String(celda_b).toUpperCase().replace(/\s+/g, ' ').trim();
 
-            // Detectamos si es un separador de gabinete
             if(celda_b_str.includes("GABINETE") || celda_b_str.includes("RACK")) {
                 let num = celda_b_str.match(/\d+/);
                 gabinete_actual_contexto = num ? `GABINETE #${parseInt(num[0])}` : celda_b_str;
                 continue;
             }
 
-            // Omitimos únicamente si es un encabezado repetido de títulos (como la palabra "NOMBRE")
             if(!_fila_es_encabezado(celda_b)) {
-                
-                // Aplicamos el filtro de visualización por página/gabinete
                 if(filtro !== "TODOS" && gabinete_actual_contexto !== filtro) continue;
 
                 let mar = obtener_celda(hoja, fila, 3);
@@ -420,29 +485,23 @@
                 let est = obtener_celda(hoja, fila, 11) || "Óptimo";
                 let obs = obtener_celda(hoja, fila, col_observaciones);
 
-                // Si absolutamente todas las celdas de datos están vacías, podemos asumir que es el final o una fila en blanco real fuera de rango
-                if (!celda_b && !mar && !mod && !ru && !ser && !h04 && !h10 && !h16 && !h22 && !obs) {
-                    // Opcional: Puedes dejar que dibuje la fila vacía o saltarla si deseas limpiar el final del archivo.
-                    // Para tu requerimiento de mostrar campos vacíos de equipos existentes, permitimos el renderizado:
-                }
-
                 let tr = document.createElement("tr");
                 tr.className = _tag_estado(est);
                 tr.dataset.filaExcel = fila;
                 
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold;">${gabinete_actual_contexto}</td>
-                    <td>${celda_b}</td>
-                    <td style="text-align:center;">${mar}</td>
-                    <td style="text-align:center;">${mod}</td>
+                    <td title="${celda_b}">${celda_b}</td>
+                    <td style="text-align:center;" title="${mar}">${mar}</td>
+                    <td style="text-align:center;" title="${mod}">${mod}</td>
                     <td style="text-align:center;">${ru}</td>
-                    <td style="text-align:center;">${ser}</td>
+                    <td style="text-align:center;" title="${ser}">${ser}</td>
                     <td style="text-align:center;">${h04}</td>
                     <td style="text-align:center;">${h10}</td>
                     <td style="text-align:center;">${h16}</td>
                     <td style="text-align:center;">${h22}</td>
                     <td style="text-align:center;">${est}</td>
-                    <td>${obs}</td>
+                    <td title="${obs}">${obs}</td>
                 `;
                 
                 tr.onclick = function() {
@@ -458,9 +517,14 @@
     }
 
     function cargar_seleccion(gab, nom, mar, mod, ru, ser, h04, h10, h16, h22, est, obs) {
-        if(document.getElementById("cb_gabinete").querySelector(`option[value="${gab}"]`)) {
-            document.getElementById("cb_gabinete").value = gab;
+        const cb_gab = document.getElementById("cb_gabinete");
+        const opcionExiste = cb_gab.querySelector(`option[value="${gab}"]`);
+        if(opcionExiste) {
+            cb_gab.value = gab;
+        } else {
+            cb_gab.value = "";
         }
+
         document.getElementById("nombre").value = nom;
         document.getElementById("marca").value = mar;
         document.getElementById("modelo").value = mod;
@@ -468,117 +532,140 @@
         document.getElementById("serie").value = ser; 
 
         let turno = document.getElementById("cb_horario").value;
-        let med = (turno === "04:00 AM") ? h04 : (turno === "10:00 AM") ? h10 : (turno === "16:00 PM") ? h16 : h22;
+        let med = "";
+        if(turno) {
+            med = (turno === "04:00 AM") ? h04 : (turno === "10:00 AM") ? h10 : (turno === "16:00 PM") ? h16 : h22;
+        }
 
         document.getElementById("medicion_individual").value = med;
         document.getElementById("cb_estado").value = est;
         document.getElementById("txt_observaciones").value = obs;
     }
 
-    function guardar() {
-        if(!workbook_data) { alert("Debe crear o abrir un archivo primero."); return; }
-        let nom = document.getElementById("nombre").value.trim();
-        if(!nom){ alert("El Nombre del Equipo no puede guardarse vacío."); return; }
+    async function guardar() {
+        if(!currentWorkbook) { alert("Abra primero el archivo original de la empresa."); return; }
+        
+        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
+        interstate_guardar_cabecera(hoja);
 
-        let sheetName = workbook_data.SheetNames[1] ? workbook_data.SheetNames[1] : workbook_data.SheetNames[0];
-        let hoja = workbook_data.Sheets[sheetName];
+        let nom = document.getElementById("nombre").value.trim();
         let target_gab = document.getElementById("cb_gabinete").value;
 
-        let fila_insercion = null;
-        let encontrado_contexto = false;
+        let fila_final = null;
 
-        for(let fila = 13; fila <= 600; fila++) {
-            let val_b = obtener_celda(hoja, fila, 2);
-            let val_b_str = String(val_b).toUpperCase().replace(/\s+/g, ' ').trim();
+        if (fila_seleccionada_idx !== null) {
+            fila_final = fila_seleccionada_idx;
+        } else {
+            if(!target_gab) { alert("Por favor seleccione un Gabinete para insertar un nuevo registro."); return; }
+            let encontrado_contexto = false;
 
-            let norm_gab = "";
-            if(val_b_str.includes("GABINETE") || val_b_str.includes("RACK")) {
-                let num = val_b_str.match(/\d+/);
-                norm_gab = num ? `GABINETE #${parseInt(num[0])}` : val_b_str;
-            }
+            for(let fila = 13; fila <= 600; fila++) {
+                let val_b = obtener_celda(hoja, fila, 2);
+                let val_b_str = String(val_b).toUpperCase().replace(/\s+/g, ' ').trim();
 
-            if(norm_gab === target_gab) {
-                encontrado_contexto = true;
-                continue;
-            }
-            if(encontrado_contexto) {
-                if(val_b_str.includes("GABINETE") || val_b_str.includes("RACK")) { 
-                    fila_insercion = fila - 1; 
-                    break; 
+                let norm_gab = "";
+                if(val_b_str.includes("GABINETE") || val_b_str.includes("RACK")) {
+                    let num = val_b_str.match(/\d+/);
+                    norm_gab = num ? `GABINETE #${parseInt(num[0])}` : val_b_str;
                 }
-                if(!val_b || String(val_b).trim() === "") {
-                    fila_insercion = fila;
-                    break;
+
+                if(norm_gab === target_gab) {
+                    encontrado_contexto = true;
+                    continue;
+                }
+                if(encontrado_contexto) {
+                    if(val_b_str.includes("GABINETE") || val_b_str.includes("RACK")) { 
+                        fila_final = fila - 1; 
+                        break; 
+                    }
+                    if(!val_b || String(val_b).trim() === "") {
+                        fila_final = fila;
+                        break;
+                    }
+                }
+            }
+
+            if(!fila_final) {
+                for(let f = 13; f <= 1000; f++){
+                    let b = obtener_celda(hoja, f, 2);
+                    if(!b || b === ""){
+                        asignar_celda(hoja, f, 2, target_gab);
+                        fila_final = f + 1;
+                        break;
+                    }
                 }
             }
         }
 
-        if(!fila_insercion) {
-            for(let f = 13; f <= 1000; f++){
-                let b = obtener_celda(hoja, f, 2);
-                if(!b || b === ""){
-                    asignar_celda(hoja, f, 2, target_gab);
-                    fila_insercion = f + 1;
-                    break;
-                }
+        // Escritura de campos de equipos
+        asignar_celda(hoja, fila_final, 2, nom);
+        asignar_celda(hoja, fila_final, 3, document.getElementById("marca").value.trim());
+        asignar_celda(hoja, fila_final, 4, document.getElementById("modelo").value.trim());
+        asignar_celda(hoja, fila_final, 5, document.getElementById("ru_val").value.trim()); 
+        asignar_celda(hoja, fila_final, 6, document.getElementById("serie").value.trim());    
+
+        let turno_sel = document.getElementById("cb_horario").value;
+        if(turno_sel) {
+            let col_turno = mapa_columnas_horario[turno_sel] || 7;
+            asignar_celda(hoja, fila_final, col_turno, document.getElementById("medicion_individual").value.trim());
+        }
+        asignar_celda(hoja, fila_final, 11, document.getElementById("cb_estado").value);
+        asignar_celda(hoja, fila_final, col_observaciones, document.getElementById("txt_observaciones").value.trim());
+
+        await actualizar_archivo_excel_fisico();
+
+        alert(`¡Listo! El registro se actualizó directamente en la celda del Excel preservando el formato original.`);
+        limpiar_campos();
+        mostrar_por_gabinete();
+    }
+
+    async function modificar() {
+        if(!currentWorkbook) { alert("Vincule primero el archivo Excel original."); return; }
+        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
+
+        interstate_guardar_cabecera(hoja);
+
+        if(fila_seleccionada_idx !== null) {
+            asignar_celda(hoja, fila_seleccionada_idx, 2, document.getElementById("nombre").value.trim());
+            asignar_celda(hoja, fila_seleccionada_idx, 3, document.getElementById("marca").value.trim());
+            asignar_celda(hoja, fila_seleccionada_idx, 4, document.getElementById("modelo").value.trim());
+            asignar_celda(hoja, fila_seleccionada_idx, 5, document.getElementById("ru_val").value.trim());
+            asignar_celda(hoja, fila_seleccionada_idx, 6, document.getElementById("serie").value.trim());
+
+            let turno_sel = document.getElementById("cb_horario").value;
+            if(turno_sel) {
+                let col_turno = mapa_columnas_horario[turno_sel] || 7;
+                asignar_celda(hoja, fila_seleccionada_idx, col_turno, document.getElementById("medicion_individual").value.trim());
             }
+            asignar_celda(hoja, fila_seleccionada_idx, 11, document.getElementById("cb_estado").value);
+            asignar_celda(hoja, fila_seleccionada_idx, col_observaciones, document.getElementById("txt_observaciones").value.trim());
         }
 
-        asignar_celda(hoja, fila_insercion, 2, nom);
-        asignar_celda(hoja, fila_insercion, 3, document.getElementById("marca").value.trim());
-        asignar_celda(hoja, fila_insercion, 4, document.getElementById("modelo").value.trim());
-        asignar_celda(hoja, fila_insercion, 5, document.getElementById("ru_val").value.trim()); 
-        asignar_celda(hoja, fila_insercion, 6, document.getElementById("serie").value.trim());    
-
-        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
-        asignar_celda(hoja, fila_insercion, col_turno, document.getElementById("medicion_individual").value.trim());
-        asignar_celda(hoja, fila_insercion, 11, document.getElementById("cb_estado").value);
-        asignar_celda(hoja, fila_insercion, col_observaciones, document.getElementById("txt_observaciones").value.trim());
-
-        alert(`Equipo guardado exitosamente dentro del ${target_gab}.`);
+        await actualizar_archivo_excel_fisico();
+        alert("Modificaciones guardadas preservando el formato original.");
         limpiar_campos();
         mostrar_por_gabinete();
     }
 
-    function modificar() {
-        if(!workbook_data || fila_seleccionada_idx === null) { alert("Por favor haga clic sobre una fila del Treeview."); return; }
-
-        let sheetName = workbook_data.SheetNames[1] ? workbook_data.SheetNames[1] : workbook_data.SheetNames[0];
-        let hoja = workbook_data.Sheets[sheetName];
-
-        asignar_celda(hoja, fila_seleccionada_idx, 2, document.getElementById("nombre").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, 3, document.getElementById("marca").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, 4, document.getElementById("modelo").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, 5, document.getElementById("ru_val").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, 6, document.getElementById("serie").value.trim());
-
-        let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
-        asignar_celda(hoja, fila_seleccionada_idx, col_turno, document.getElementById("medicion_individual").value.trim());
-        asignar_celda(hoja, fila_seleccionada_idx, 11, document.getElementById("cb_estado").value);
-        asignar_celda(hoja, fila_seleccionada_idx, col_observaciones, document.getElementById("txt_observaciones").value.trim());
-
-        alert("Fila modificada correctamente.");
-        limpiar_campos();
-        mostrar_por_gabinete();
-    }
-
-    function confirmar_estatus() { if(fila_seleccionada_idx !== null) modificar(); }
-
-    function limpiar_registro() {
-        if(!workbook_data || fila_seleccionada_idx === null) return;
-        let menu = prompt("Escriba 'SI' para borrar solo el turno activo.\nEscriba 'NO' para borrar el equipo completo.");
+    async function limpiar_registro() {
+        if(!currentWorkbook || fila_seleccionada_idx === null) return;
+        let menu = prompt("Escriba 'SI' para borrar el turno activo.\nEscriba 'NO' para remover el renglón completo.");
         if(!menu) return;
 
-        let sheetName = workbook_data.SheetNames[1] ? workbook_data.SheetNames[1] : workbook_data.SheetNames[0];
-        let hoja = workbook_data.Sheets[sheetName];
+        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
 
         if(menu.toUpperCase().trim() === "SI") {
-            let col_turno = mapa_columnas_horario[document.getElementById("cb_horario").value] || 7;
-            asignar_celda(hoja, fila_seleccionada_idx, col_turno, "");
+            let turno_sel = document.getElementById("cb_horario").value;
+            if(turno_sel) {
+                let col_turno = mapa_columnas_horario[turno_sel] || 7;
+                asignar_celda(hoja, fila_seleccionada_idx, col_turno, "");
+            }
         } else if(menu.toUpperCase().trim() === "NO") {
             if(!confirm("¿Remover el renglón completo del equipo?")) return;
             for(let col = 2; col <= col_observaciones; col++) asignar_celda(hoja, fila_seleccionada_idx, col, "");
         }
+        
+        await actualizar_archivo_excel_fisico();
         limpiar_campos();
         mostrar_por_gabinete();
     }
@@ -591,8 +678,9 @@
         document.getElementById("serie").value = "";
         document.getElementById("medicion_individual").value = "";
         document.getElementById("txt_observaciones").value = "";
-        document.getElementById("cb_gabinete").value = "GABINETE #1";
-        document.getElementById("cb_estado").value = "Óptimo";
+        document.getElementById("cb_gabinete").value = ""; 
+        document.getElementById("cb_estado").value = ""; 
+        fila_seleccionada_idx = null; 
     }
 </script>
 </body>
