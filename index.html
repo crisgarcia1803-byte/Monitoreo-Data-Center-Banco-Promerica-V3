@@ -26,7 +26,7 @@
             overflow-x: hidden; 
         }
 
-        /* --- ESTILOS DE LA PANTALLA DE LOGIN --- */
+        /* Configuración de estilos de la pantalla para iniciar sesion */
         #login-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -97,7 +97,7 @@
             display: none;
         }
 
-        /* --- ESTILOS DEL CONTENIDO PRINCIPAL --- */
+        /* Estilos de la parte de adentro */
         #main-content {
             display: none; 
             position: relative; 
@@ -248,7 +248,7 @@
             text-overflow: ellipsis; 
         }
 
-        /* Anchos de columna */
+        /* Anchos de la columna tipo treeview */
         .col-gab    { width: 9%; }
         .col-nom    { width: 15%; }
         .col-mar    { width: 7%; }
@@ -789,7 +789,7 @@
 
         if(!target_idx) target_idx = 14;
 
-        // Insertar renglón estructuralmente vacío en el documento
+        // Insertar fila vacía para nuevo registro de servidor
         hoja.spliceRows(target_idx, 0, []);
         
         const nuevaFila = hoja.getRow(target_idx);
@@ -798,7 +798,7 @@
             cell.fill = undefined;
         });
 
-        // Aseguramos que todas las columnas de datos nazcan vacías en el Excel
+        
         asignar_celda(hoja, target_idx, 2, "");
         asignar_celda(hoja, target_idx, 3, "");
         asignar_celda(hoja, target_idx, 4, "");
@@ -814,7 +814,7 @@
         await actualizar_archivo_excel_fisico();
         alert(`Se ha insertado una fila completamente vacía en el Excel.`);
         
-        // Limpiamos la selección y el formulario para que puedas escribir los nuevos datos directamente
+        
         limpiar_campos();
         mostrar_por_gabinete();
     }
