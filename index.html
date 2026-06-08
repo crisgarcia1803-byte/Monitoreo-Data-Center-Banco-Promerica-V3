@@ -2,25 +2,123 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Monitoreo Data Center BP</title>
+    <title>Monitoreo Data Center BP - Login</title>
+    
+    <link rel="icon" type="image/png" href="https://play-lh.googleusercontent.com/XKLrbobj8GFv259lte7hSWc9BleH7Mjs67IKBefRU0GTDLiFyT0zJ4WBuz6TNqQuoU6P">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <style>
         /* Documentación interna
            Autor: Cristopher Gerardo García Escoto (cris.garcia1803@gmail.com)
            Proyecto: Practicante - Banco Promerica 
-           Fin en mente: Optimizar y automatizar el monitoreo de Data Center
-           Historia: 27/05/2026 - 28/05/2026 - 29/05/2026 - 01/05/2026 - 02/05/2026
-           
-           
+           Lenguaje base: Python
+           Lenguaje para página: HTML, JavaScript, CSS
+           Fin en mente: Facilitar el monitoreo de los servidores del data center
+           Historia: 27/05/2026 - 28/05/2026 - 29/05/2026 - 01/06/2026 - 02/06/2026 - 03/06/2026 - 04/06/2026 - 05/06/2026
            */
 
         body {
             margin: 0;
             padding: 20px;
-            background-color: #098E09;
+            background-color: #00693c; /* NUEVO: Color de fondo principal */
             font-family: Arial, sans-serif;
             color: white;
-            overflow-x: hidden; /* Evita scroll horizontal en toda la página */
+            overflow-x: hidden; 
+        }
+
+        /* --- ESTILOS DE LA PANTALLA DE LOGIN --- */
+        #login-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #004d2c; /* NUEVO: Fondo oscuro del login */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            color: black;
+            width: 320px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            margin-top: 0;
+            color: #00693c; /* NUEVO: Título del login */
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .login-group {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        .login-group label {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .login-box input {
+            width: 100%;
+            height: 35px;
+            padding: 6px;
+            font-size: 14px;
+        }
+
+        .btn-login {
+            width: 100%;
+            background-color: #79bf42; /* NUEVO: Botón de login */
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-login:hover {
+            background-color: #639e35;
+        }
+
+        .error-login {
+            color: red;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* --- ESTILOS DEL CONTENIDO PRINCIPAL --- */
+        #main-content {
+            display: none; 
+            position: relative; 
+        }
+
+        /* Contenedor de la cabecera con el título y la imagen en la esquina */
+        .cabecera-principal {
+            position: relative;
+            margin-bottom: 25px;
+            padding-right: 120px; 
+            min-height: 50px;
+        }
+
+        .logo-esquina {
+            position: absolute;
+            top: 0;
+            right: 0;
+            max-width: 110px;
+            max-height: 50px;
+            object-fit: contain;
+            border-radius: 4px;
         }
 
         .fila-inputs {
@@ -44,7 +142,7 @@
         }
 
         .flex-group label.highlight {
-            color: #ADFF2F;
+            color: #79bf42; /* NUEVO: Color para las etiquetas resaltadas */
         }
 
         input, select {
@@ -67,9 +165,9 @@
 
         .btn {
             padding: 6px 16px;
-            background-color: #ADFF2F;
-            color: black;
-            border: 1px solid #7a7a7a;
+            background-color: #79bf42; /* NUEVO: Color de los botones principales */
+            color: white; /* Cambiado a blanco para mejor contraste en fondo verde */
+            border: 1px solid #5a9130;
             font-size: 13px;
             font-weight: bold;
             border-radius: 4px;
@@ -77,20 +175,21 @@
             height: 32px;
         }
         .btn:hover {
-            background-color: #96db29;
+            background-color: #639e35;
         }
         .btn-danger {
             background-color: #FF6B6B;
             color: white;
+            border: 1px solid #d45959;
         }
         .btn-danger:hover {
             background-color: #e05353;
         }
 
         .barra-filtrado {
-            background-color: #055405;
+            background-color: #004d2c; /* NUEVO: Fondo de la barra de filtrado */
             padding: 8px;
-            border: 1px solid #ADFF2F;
+            border: 1px solid #79bf42; /* NUEVO: Borde de la barra */
             margin-bottom: 15px;
             display: flex;
             align-items: center;
@@ -106,12 +205,11 @@
         .status-label {
             font-size: 13px;
             font-style: italic;
-            color: #ADFF2F;
+            color: #79bf42; /* NUEVO: Texto de estado del archivo */
             margin-bottom: 10px;
             display: block;
         }
 
-        /* --- OPTIMIZACIÓN DE ESPACIO DE LA TABLA --- */
         .frame-tree {
             background-color: white;
             border: 1px solid #ccc;
@@ -151,7 +249,6 @@
             text-overflow: ellipsis; 
         }
 
-        /* Asignación de anchos proporcionales optimizados para pantallas estándar */
         .col-gab    { width: 9%; }
         .col-nom    { width: 15%; }
         .col-mar    { width: 7%; }
@@ -176,148 +273,200 @@
 </head>
 <body>
 
-    <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">Monitoreo Data Center BP</h1>
-
-    <div class="fila-inputs">
-        <div class="flex-group">
-            <label>Fecha:</label>
-            <input type="text" id="txt_fecha" style="width: 100px;">
+    <div id="login-container">
+        <div class="login-box">
+            <h2>Banco Promerica - Acceso</h2>
+            <div class="login-group">
+                <label>Usuario:</label>
+                <input type="text" id="login_user" placeholder="Ej: admin">
+            </div>
+            <div class="login-group">
+                <label>Contraseña:</label>
+                <input type="password" id="login_pass" placeholder="••••••••">
+            </div>
+            <button class="btn-login" onclick="autenticar()">Ingresar</button>
+            <div id="error_msg" class="error-login">Usuario o contraseña incorrectos.</div>
         </div>
-        <div class="flex-group">
-            <label>Horario Chequeo:</label>
-            <select id="cb_horario" onchange="cargar_datos_cabecera_turno()" style="width: 110px;">
-                <option value=""></option> 
-                <option value="04:00 AM">04:00 AM</option>
-                <option value="10:00 AM">10:00 AM</option>
-                <option value="16:00 PM">16:00 PM</option>
-                <option value="22:00 PM">22:00 PM</option>
+    </div>
+
+    <div id="main-content">
+
+        <div class="cabecera-principal">
+            <div>
+                <h1 style="font-size: 24px; font-weight: bold; margin: 0; display: inline-block; vertical-align: middle;">Monitoreo Data Center BP</h1>
+                <button class="btn btn-danger" onclick="cerrar_sesion()" style="height:28px; padding:2px 10px; margin-left: 15px; vertical-align: middle;">Cerrar Sesión</button>
+            </div>
+            <img src="https://play-lh.googleusercontent.com/XKLrbobj8GFv259lte7hSWc9BleH7Mjs67IKBefRU0GTDLiFyT0zJ4WBuz6TNqQuoU6P" alt="Logo Corporativo" class="logo-esquina">
+        </div>
+
+        <div class="fila-inputs">
+            <div class="flex-group">
+                <label>Fecha:</label>
+                <input type="text" id="txt_fecha" style="width: 100px;">
+            </div>
+            <div class="flex-group">
+                <label>Horario Chequeo:</label>
+                <select id="cb_horario" onchange="cargar_datos_cabecera_turno()" style="width: 110px;">
+                    <option value=""></option> 
+                    <option value="04:00 AM">04:00 AM</option>
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="16:00 PM">16:00 PM</option>
+                    <option value="22:00 PM">22:00 PM</option>
+                </select>
+            </div>
+            <div class="flex-group">
+                <label>Operador / Responsable:</label>
+                <input type="text" id="operador" style="width: 160px;">
+            </div>
+            <div class="flex-group">
+                <label class="highlight">ISP:</label>
+                <input type="text" id="input_isp" style="width: 80px;">
+            </div>
+            <div class="flex-group">
+                <label class="highlight">UPS (°C):</label>
+                <input type="text" id="input_ups" style="width: 80px;">
+            </div>
+            <div class="flex-group">
+                <label class="highlight">Servidores (°F):</label>
+                <input type="text" id="input_servidores" style="width: 90px;">
+            </div>
+            <div class="flex-group">
+                <label class="highlight">AC (%RH):</label>
+                <input type="text" id="input_ac" style="width: 80px;">
+            </div>
+            <div class="flex-group">
+                <label class="highlight">PEX A:</label>
+                <input type="text" id="input_pexa" style="width: 80px;">
+            </div>
+            <div class="flex-group">
+                <label class="highlight">PEX B:</label>
+                <input type="text" id="input_pexb" style="width: 80px;">
+            </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #79bf42; margin: 15px 0;">
+
+        <div class="fila-inputs">
+            <div class="flex-group">
+                <label>Gabinete</label>
+                <select id="cb_gabinete" style="width: 130px;">
+                    <option value=""></option> 
+                </select>
+            </div>
+            <div class="flex-group">
+                <label>Nombre Equipo</label>
+                <input type="text" id="nombre" style="width: 150px;">
+            </div>
+            <div class="flex-group">
+                <label>Marca</label>
+                <input type="text" id="marca" style="width: 100px;">
+            </div>
+            <div class="flex-group">
+                <label>Modelo</label>
+                <input type="text" id="modelo" style="width: 130px;">
+            </div>
+            <div class="flex-group">
+                <label>RU#</label>
+                <input type="text" id="ru_val" style="width: 55px;">
+            </div>
+            <div class="flex-group">
+                <label>Serie</label>
+                <input type="text" id="serie" style="width: 140px;">
+            </div>
+            <div class="flex-group">
+                <label>Estatus</label>
+                <select id="cb_estado" style="width: 100px;">
+                    <option value=""></option> 
+                    <option value="Óptimo">Óptimo</option>
+                    <option value="Alertado">Alertado</option>
+                    <option value="Fallo">Fallo</option>
+                </select>
+            </div>
+            <div class="flex-group">
+                <label class="highlight">Medición Turno</label>
+                <input type="text" id="medicion_individual" style="width: 110px;">
+            </div>
+            <div class="flex-group">
+                <label>Observaciones</label>
+                <input type="text" id="txt_observaciones" style="width: 180px;">
+            </div>
+        </div>
+
+        <span id="er" class="status-label">Excel activo: Ninguno</span>
+
+        <div class="acciones-container">
+            <button class="btn" onclick="abrir_excel_nativo()">Abrir</button>
+            <button class="btn" onclick="guardar()">Guardar Registro</button>
+            <button class="btn" onclick="modificar()">Modificar Celda</button>
+            <button class="btn btn-danger" onclick="limpiar_registro()">Limpiar Registro</button>
+        </div>
+
+        <div class="barra-filtrado">
+            <label>FILTRAR VISTA POR GABINETE:</label>
+            <select id="cb_filtro_gabinete" onchange="mostrar_por_gabinete()" style="width: 180px;">
+                <option value="TODOS">-- Ver Todo el Excel --</option>
             </select>
         </div>
-        <div class="flex-group">
-            <label>Operador / Responsable:</label>
-            <input type="text" id="operador" style="width: 160px;">
-        </div>
-        <div class="flex-group">
-            <label class="highlight">ISP:</label>
-            <input type="text" id="input_isp" style="width: 80px;">
-        </div>
-        <div class="flex-group">
-            <label class="highlight">UPS (°C):</label>
-            <input type="text" id="input_ups" style="width: 80px;">
-        </div>
-        <div class="flex-group">
-            <label class="highlight">Servidores (°F):</label>
-            <input type="text" id="input_servidores" style="width: 90px;">
-        </div>
-        <div class="flex-group">
-            <label class="highlight">AC (%RH):</label>
-            <input type="text" id="input_ac" style="width: 80px;">
-        </div>
-        <div class="flex-group">
-            <label class="highlight">PEX A:</label>
-            <input type="text" id="input_pexa" style="width: 80px;">
-        </div>
-        <div class="flex-group">
-            <label class="highlight">PEX B:</label>
-            <input type="text" id="input_pexb" style="width: 80px;">
-        </div>
-    </div>
 
-    <hr style="border: 0; border-top: 1px solid #ADFF2F; margin: 15px 0;">
-
-    <div class="fila-inputs">
-        <div class="flex-group">
-            <label>Gabinete</label>
-            <select id="cb_gabinete" style="width: 130px;">
-                <option value=""></option> 
-            </select>
+        <div class="frame-tree">
+            <table class="excel-table">
+                <thead>
+                    <tr>
+                        <th class="col-gab">Gabinete</th>
+                        <th class="col-nom">Nombre Equipo</th>
+                        <th class="col-mar">Marca</th>
+                        <th class="col-mod">Modelo</th>
+                        <th class="col-ru">RU#</th>
+                        <th class="col-ser">Serie</th>
+                        <th class="col-h04">04:00 am</th>
+                        <th class="col-h10">10:00 am</th>
+                        <th class="col-h16">16:00 pm</th>
+                        <th class="col-h22">22:00 pm</th>
+                        <th class="col-est">Estado</th>
+                        <th class="col-obs">Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tree_body"></tbody>
+            </table>
         </div>
-        <div class="flex-group">
-            <label>Nombre Equipo</label>
-            <input type="text" id="nombre" style="width: 150px;">
-        </div>
-        <div class="flex-group">
-            <label>Marca</label>
-            <input type="text" id="marca" style="width: 100px;">
-        </div>
-        <div class="flex-group">
-            <label>Modelo</label>
-            <input type="text" id="modelo" style="width: 130px;">
-        </div>
-        <div class="flex-group">
-            <label>RU#</label>
-            <input type="text" id="ru_val" style="width: 55px;">
-        </div>
-        <div class="flex-group">
-            <label>Serie</label>
-            <input type="text" id="serie" style="width: 140px;">
-        </div>
-        <div class="flex-group">
-            <label>Estatus</label>
-            <select id="cb_estado" style="width: 100px;">
-                <option value=""></option> 
-                <option value="Óptimo">Óptimo</option>
-                <option value="Alertado">Alertado</option>
-                <option value="Fallo">Fallo</option>
-            </select>
-        </div>
-        <div class="flex-group">
-            <label class="highlight">Medición Turno</label>
-            <input type="text" id="medicion_individual" style="width: 110px;">
-        </div>
-        <div class="flex-group">
-            <label>Observaciones</label>
-            <input type="text" id="txt_observaciones" style="width: 180px;">
-        </div>
-    </div>
-
-    <span id="er" class="status-label">Excel activo: Ninguno</span>
-
-    <div class="acciones-container">
-        <button class="btn" onclick="abrir_excel_nativo()">Abrir / Crear</button>
-        <button class="btn" onclick="guardar()">Guardar Registro</button>
-        <button class="btn" onclick="modificar()">Modificar Celda</button>
-        <button class="btn btn-danger" onclick="limpiar_registro()">Limpiar Registro</button>
-    </div>
-
-    <div class="barra-filtrado">
-        <label>FILTRAR VISTA POR GABINETE:</label>
-        <select id="cb_filtro_gabinete" onchange="mostrar_por_gabinete()" style="width: 180px;">
-            <option value="TODOS">-- Ver Todo el Excel --</option>
-        </select>
-    </div>
-
-    <div class="frame-tree">
-        <table class="excel-table">
-            <thead>
-                <tr>
-                    <th class="col-gab">Gabinete</th>
-                    <th class="col-nom">Nombre Equipo</th>
-                    <th class="col-mar">Marca</th>
-                    <th class="col-mod">Modelo</th>
-                    <th class="col-ru">RU#</th>
-                    <th class="col-ser">Serie</th>
-                    <th class="col-h04">04:00 am</th>
-                    <th class="col-h10">10:00 am</th>
-                    <th class="col-h16">16:00 pm</th>
-                    <th class="col-h22">22:00 pm</th>
-                    <th class="col-est">Estado</th>
-                    <th class="col-obs">Observaciones</th>
-                </tr>
-            </thead>
-            <tbody id="tree_body"></tbody>
-        </table>
     </div>
 
 <script>
+    const USUARIO_VALIDO = "admin";
+    const CLAVE_VALIDA = "promerica2026";
+
     let fileHandle = null;
     let currentWorkbook = null; 
     let fila_seleccionada_idx = null;
 
-    // Mapeo exacto de columnas según el layout real de Banco Promerica
     const mapa_columnas_horario = {"04:00 AM": 7, "10:00 AM": 8, "16:00 PM": 9, "22:00 PM": 10};
     const mapa_filas_cabecera_turno = {"04:00 AM": 6, "10:00 AM": 7, "16:00 PM": 8, "22:00 PM": 9};
     const col_observaciones = 12;
+
+    function autenticar() {
+        const u = document.getElementById("login_user").value.trim();
+        const p = document.getElementById("login_pass").value;
+        const err = document.getElementById("error_msg");
+
+        if(u === USUARIO_VALIDO && p === CLAVE_VALIDA) {
+            document.getElementById("login-container").style.display = "none";
+            document.getElementById("main-content").style.display = "block";
+            err.style.display = "none";
+        } else {
+            err.style.display = "block";
+        }
+    }
+
+    function cerrar_sesion() {
+        document.getElementById("login_user").value = "";
+        document.getElementById("login_pass").value = "";
+        document.getElementById("login-container").style.display = "flex";
+        document.getElementById("main-content").style.display = "none";
+    }
+
+    document.getElementById("login_pass").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") autenticar();
+    });
 
     window.onload = function() {
         const cb_gabinete = document.getElementById("cb_gabinete");
@@ -406,45 +555,39 @@
         hoja.getCell(r, c).value = val;
     }
 
-    // CORRECCIÓN DE COLUMNAS DE LECTURA (Celdas reales de la plantilla corporativa)
     function cargar_datos_cabecera_turno() {
         if(!currentWorkbook) return;
         let turnoActivo = document.getElementById("cb_horario").value;
         if(!turnoActivo) return; 
         
-        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
+        let hoja = currentWorkbook.worksheets[0];
         let filaCabecera = mapa_filas_cabecera_turno[turnoActivo];
 
-        document.getElementById("operador").value = obtener_celda(hoja, filaCabecera, 3);   // Columna C (Nombre/Responsable)
-        document.getElementById("input_isp").value = obtener_celda(hoja, filaCabecera, 6);   // Columna F (ISP)
-        document.getElementById("input_ups").value = obtener_celda(hoja, filaCabecera, 8);   // Columna H (UPS)
-        document.getElementById("input_servidores").value = obtener_celda(hoja, filaCabecera, 10); // Columna J (Servidores)
-        document.getElementById("input_ac").value = obtener_celda(hoja, filaCabecera, 12);   // Columna L (AC)
+        document.getElementById("operador").value = obtener_celda(hoja, filaCabecera, 3);   
+        document.getElementById("input_isp").value = obtener_celda(hoja, filaCabecera, 6);   
+        document.getElementById("input_ups").value = obtener_celda(hoja, filaCabecera, 8);   
+        document.getElementById("input_servidores").value = obtener_celda(hoja, filaCabecera, 10); 
+        document.getElementById("input_ac").value = obtener_celda(hoja, filaCabecera, 12);   
+        document.getElementById("input_pexa").value = obtener_celda(hoja, filaCabecera, 13); 
+        document.getElementById("input_pexb").value = obtener_celda(hoja, filaCabecera + 1, 13); 
         
-        // El PEX lee de la celda de la columna M de forma limpia
-        document.getElementById("input_pexa").value = obtener_celda(hoja, filaCabecera, 13); // Columna M
-        document.getElementById("input_pexb").value = obtener_celda(hoja, filaCabecera + 1, 13); // Fila inferior si aplica, o se mantiene en M
-        
-        // Fecha va exactamente en la celda combinada C4
         let fechaExcel = obtener_celda(hoja, 4, 3);
         if(fechaExcel) document.getElementById("txt_fecha").value = fechaExcel;
     }
 
-    // CORRECCIÓN DE ESCRITURA EN CELDAS EXACTAS
     function interstate_guardar_cabecera(hoja) {
         let turnoActivo = document.getElementById("cb_horario").value;
         if(!turnoActivo) return;
 
         let filaCabecera = mapa_filas_cabecera_turno[turnoActivo];
 
-        asignar_celda(hoja, filaCabecera, 3, document.getElementById("operador").value.trim());       // Columna C
-        asignar_celda(hoja, filaCabecera, 6, document.getElementById("input_isp").value.trim());       // Columna F
-        asignar_celda(hoja, filaCabecera, 8, document.getElementById("input_ups").value.trim());       // Columna H
-        asignar_celda(hoja, filaCabecera, 10, document.getElementById("input_servidores").value.trim()); // Columna J
-        asignar_celda(hoja, filaCabecera, 12, document.getElementById("input_ac").value.trim());       // Columna L
-        asignar_celda(hoja, filaCabecera, 13, document.getElementById("input_pexa").value.trim());     // Columna M (PEX A)
+        asignar_celda(hoja, filaCabecera, 3, document.getElementById("operador").value.trim());       
+        asignar_celda(hoja, filaCabecera, 6, document.getElementById("input_isp").value.trim());       
+        asignar_celda(hoja, filaCabecera, 8, document.getElementById("input_ups").value.trim());       
+        asignar_celda(hoja, filaCabecera, 10, document.getElementById("input_servidores").value.trim()); 
+        asignar_celda(hoja, filaCabecera, 12, document.getElementById("input_ac").value.trim());       
+        asignar_celda(hoja, filaCabecera, 13, document.getElementById("input_pexa").value.trim());     
         
-        // Corrección de la Fecha en la celda C4
         asignar_celda(hoja, 4, 3, document.getElementById("txt_fecha").value.trim());
     }
 
@@ -454,7 +597,7 @@
         tbody.innerHTML = "";
         fila_seleccionada_idx = null;
 
-        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
+        let hoja = currentWorkbook.worksheets[0];
         let filtro = document.getElementById("cb_filtro_gabinete").value;
 
         let gabinete_actual_contexto = "GABINETE #1"; 
@@ -545,7 +688,7 @@
     async function guardar() {
         if(!currentWorkbook) { alert("Abra primero el archivo original de la empresa."); return; }
         
-        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
+        let hoja = currentWorkbook.worksheets[0];
         interstate_guardar_cabecera(hoja);
 
         let nom = document.getElementById("nombre").value.trim();
@@ -597,7 +740,6 @@
             }
         }
 
-        // Escritura de campos de equipos
         asignar_celda(hoja, fila_final, 2, nom);
         asignar_celda(hoja, fila_final, 3, document.getElementById("marca").value.trim());
         asignar_celda(hoja, fila_final, 4, document.getElementById("modelo").value.trim());
@@ -621,7 +763,7 @@
 
     async function modificar() {
         if(!currentWorkbook) { alert("Vincule primero el archivo Excel original."); return; }
-        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
+        let hoja = currentWorkbook.worksheets[0];
 
         interstate_guardar_cabecera(hoja);
 
@@ -652,7 +794,7 @@
         let menu = prompt("Escriba 'SI' para borrar el turno activo.\nEscriba 'NO' para remover el renglón completo.");
         if(!menu) return;
 
-        let hoja = currentWorkbook.worksheets[1] ? currentWorkbook.worksheets[1] : currentWorkbook.worksheets[0];
+        let hoja = currentWorkbook.worksheets[0];
 
         if(menu.toUpperCase().trim() === "SI") {
             let turno_sel = document.getElementById("cb_horario").value;
