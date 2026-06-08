@@ -248,12 +248,13 @@
             text-overflow: ellipsis; 
         }
 
+        /* Anchos de columna */
         .col-gab    { width: 9%; }
         .col-nom    { width: 15%; }
         .col-mar    { width: 7%; }
         .col-mod    { width: 9%; }
-        .col-ser    { width: 11%; }
-        .col-ru     { width: 4%; }
+        .col-ru     { width: 4%; }   
+        .col-ser    { width: 11%; }  
         .col-h04    { width: 7%; }
         .col-h10    { width: 7%; }
         .col-h16    { width: 7%; }
@@ -370,12 +371,12 @@
                 <input type="text" id="modelo" style="width: 130px;">
             </div>
             <div class="flex-group">
-                <label>Serie</label>
-                <input type="text" id="serie" style="width: 140px;">
-            </div>
-            <div class="flex-group">
                 <label>RU#</label>
                 <input type="text" id="ru_val" style="width: 55px;">
+            </div>
+            <div class="flex-group">
+                <label>Serie</label>
+                <input type="text" id="serie" style="width: 140px;">
             </div>
             <div class="flex-group">
                 <label>Estatus</label>
@@ -421,8 +422,8 @@
                         <th class="col-nom">Nombre Equipo</th>
                         <th class="col-mar">Marca</th>
                         <th class="col-mod">Modelo</th>
-                        <th class="col-ser">Serie</th>
                         <th class="col-ru">RU#</th>
+                        <th class="col-ser">Serie</th>
                         <th class="col-h04">04:00 am</th>
                         <th class="col-h10">10:00 am</th>
                         <th class="col-h16">16:00 pm</th>
@@ -444,9 +445,11 @@
     let currentWorkbook = null; 
     let fila_seleccionada_idx = null;
 
+    const col_ru_excel = 5;
+    const col_serie_excel = 6;
+    const col_observaciones = 12;
     const mapa_columnas_horario = {"04:00 AM": 7, "10:00 AM": 8, "16:00 PM": 9, "22:00 PM": 10};
     const mapa_filas_cabecera_turno = {"04:00 AM": 6, "10:00 AM": 7, "16:00 PM": 8, "22:00 PM": 9};
-    const col_observaciones = 12;
 
     function autenticar() {
         const u = document.getElementById("login_user").value.trim();
@@ -477,7 +480,6 @@
         const cb_gabinete = document.getElementById("cb_gabinete");
         const cb_filtro = document.getElementById("cb_filtro_gabinete");
         
-        // CORRECCIÓN: Asegurar una opción totalmente vacía al principio
         cb_gabinete.innerHTML = '<option value=""></option>';
         
         for(let i=1; i<=16; i++) {
@@ -647,8 +649,8 @@
 
                 let mar = obtener_celda(hoja, fila, 3);
                 let mod = obtener_celda(hoja, fila, 4);
-                let ser = obtener_celda(hoja, fila, 5);
-                let ru  = obtener_celda(hoja, fila, 6);
+                let ru  = obtener_celda(hoja, fila, col_ru_excel);
+                let ser = obtener_celda(hoja, fila, col_serie_excel);
                 
                 let h04 = obtener_celda(hoja, fila, 7);
                 let h10 = obtener_celda(hoja, fila, 8);
@@ -667,7 +669,6 @@
                 }
                 
                 tr.dataset.filaExcel = fila;
-                // CORRECCIÓN: Guardamos el gabinete específico en el dataset de la fila
                 tr.dataset.gabinetePertenece = gabinete_actual_contexto; 
                 
                 tr.innerHTML = `
@@ -675,8 +676,8 @@
                     <td title="${celda_b}">${celda_b}</td>
                     <td style="text-align:center;" title="${mar}">${mar}</td>
                     <td style="text-align:center;" title="${mod}">${mod}</td>
-                    <td style="text-align:center;" title="${ser}">${ser}</td>
                     <td style="text-align:center;">${ru}</td>
+                    <td style="text-align:center;" title="${ser}">${ser}</td>
                     <td style="text-align:center;">${h04}</td>
                     <td style="text-align:center;">${h10}</td>
                     <td style="text-align:center;">${h16}</td>
@@ -691,18 +692,16 @@
                     tr.classList.add("selected");
                     fila_seleccionada_idx = fila;
                     
-                    // CORRECCIÓN EXTRA: Pasamos el valor directo desde el dataset inyectado individualmente
-                    cargar_seleccion(tr.dataset.gabinetePertenece, celda_b, mar, mod, ser, ru, h04, h10, h16, h22, est, obs);
+                    cargar_seleccion(tr.dataset.gabinetePertenece, celda_b, mar, mod, ru, ser, h04, h10, h16, h22, est, obs);
                 };
                 tbody.appendChild(tr);
             }
         }
     }
 
-    function cargar_seleccion(gab, nom, mar, mod, ser, ru, h04, h10, h16, h22, est, obs) {
+    function cargar_seleccion(gab, nom, mar, mod, ru, ser, h04, h10, h16, h22, est, obs) {
         const cb_gab = document.getElementById("cb_gabinete");
         
-        // CORRECCIÓN COMPLETA: Busca y empareja de forma segura el Gabinete de la celda cliqueada
         if(gab) {
             cb_gab.value = gab;
         } else {
@@ -712,8 +711,8 @@
         document.getElementById("nombre").value = nom;
         document.getElementById("marca").value = mar;
         document.getElementById("modelo").value = mod;
-        document.getElementById("serie").value = ser; 
         document.getElementById("ru_val").value = ru; 
+        document.getElementById("serie").value = ser; 
 
         let turno = document.getElementById("cb_horario").value;
         let med = "";
@@ -738,8 +737,8 @@
             asignar_celda(hoja, fila_seleccionada_idx, 2, document.getElementById("nombre").value.trim());
             asignar_celda(hoja, fila_seleccionada_idx, 3, document.getElementById("marca").value.trim());
             asignar_celda(hoja, fila_seleccionada_idx, 4, document.getElementById("modelo").value.trim());
-            asignar_celda(hoja, fila_seleccionada_idx, 5, document.getElementById("serie").value.trim());
-            asignar_celda(hoja, fila_seleccionada_idx, 6, document.getElementById("ru_val").value.trim());
+            asignar_celda(hoja, fila_seleccionada_idx, col_ru_excel, document.getElementById("ru_val").value.trim());
+            asignar_celda(hoja, fila_seleccionada_idx, col_serie_excel, document.getElementById("serie").value.trim());
 
             let turno_sel = document.getElementById("cb_horario").value;
             if(turno_sel) {
@@ -771,7 +770,7 @@
         if(target_idx === null) {
             let filtro = document.getElementById("cb_filtro_gabinete").value;
             if(!filtro || filtro === "TODOS") {
-                alert("Por favor, seleccione un equipo de la tabla para saber dónde insertar la nueva fila vacía.");
+                alert("Por favor, seleccione un equipo de la tabla para saber debajo de cuál insertar la nueva fila vacía.");
                 return;
             }
             for(let fila = 13; fila <= 600; fila++) {
@@ -790,6 +789,7 @@
 
         if(!target_idx) target_idx = 14;
 
+        // Insertar renglón estructuralmente vacío en el documento
         hoja.spliceRows(target_idx, 0, []);
         
         const nuevaFila = hoja.getRow(target_idx);
@@ -798,8 +798,23 @@
             cell.fill = undefined;
         });
 
+        // Aseguramos que todas las columnas de datos nazcan vacías en el Excel
+        asignar_celda(hoja, target_idx, 2, "");
+        asignar_celda(hoja, target_idx, 3, "");
+        asignar_celda(hoja, target_idx, 4, "");
+        asignar_celda(hoja, target_idx, col_ru_excel, "");
+        asignar_celda(hoja, target_idx, col_serie_excel, "");
+        asignar_celda(hoja, target_idx, 7, "");
+        asignar_celda(hoja, target_idx, 8, "");
+        asignar_celda(hoja, target_idx, 9, "");
+        asignar_celda(hoja, target_idx, 10, "");
+        asignar_celda(hoja, target_idx, 11, "Óptimo");
+        asignar_celda(hoja, target_idx, col_observaciones, "");
+
         await actualizar_archivo_excel_fisico();
-        alert(`Fila vacía insertada correctamente en la posición del Excel original.`);
+        alert(`Se ha insertado una fila completamente vacía en el Excel.`);
+        
+        // Limpiamos la selección y el formulario para que puedas escribir los nuevos datos directamente
         limpiar_campos();
         mostrar_por_gabinete();
     }
