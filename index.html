@@ -114,8 +114,8 @@
             position: absolute;
             top: 0;
             right: 0;
-            max-width: 110px;
-            max-height: 50px;
+            max-width: 150px;
+            max-height: 70px;
             object-fit: contain;
             border-radius: 4px;
         }
@@ -274,6 +274,18 @@
         .excel-table tr.selected {
             background-color: #cce5ff !important;
         }
+
+        .developer-login {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            opacity: 0.9;
+        }
+
+
     </style>
 </head>
 <body>
@@ -284,6 +296,9 @@
             <div class="login-group">
                 <label>Usuario:</label>
                 <input type="text" id="login_user" placeholder="Ej: admin">
+            </div>
+            <div class="developer-login">
+                Developed by Cristopher García Escoto
             </div>
             <div class="login-group">
                 <label>Contraseña:</label>
@@ -303,6 +318,12 @@
             </div>
             <img src="https://play-lh.googleusercontent.com/XKLrbobj8GFv259lte7hSWc9BleH7Mjs67IKBefRU0GTDLiFyT0zJ4WBuz6TNqQuoU6P" alt="Logo Corporativo" class="logo-esquina">
         </div>
+
+        <div class="logo-container">
+            <img src="https://play-lh.googleusercontent.com/XKLrbobj8GFv259lte7hSWc9BleH7Mjs67IKBefRU0GTDLiFyT0zJ4WBuz6TNqQuoU6P"
+                alt="Logo Corporativo"
+                    class="logo-esquina">
+            </div>
 
         <div class="fila-inputs">
             <div class="flex-group">
@@ -798,7 +819,7 @@
             cell.fill = undefined;
         });
 
-        
+    
         asignar_celda(hoja, target_idx, 2, "");
         asignar_celda(hoja, target_idx, 3, "");
         asignar_celda(hoja, target_idx, 4, "");
@@ -814,7 +835,7 @@
         await actualizar_archivo_excel_fisico();
         alert(`Se ha insertado una fila completamente vacía en el Excel.`);
         
-        
+        // Limpiamos la selección y el formulario para que puedas escribir los nuevos datos directamente
         limpiar_campos();
         mostrar_por_gabinete();
     }
